@@ -55,16 +55,19 @@ BrainTumorYolo/
 │   ├── eval_plan.md         # Implementation plan for evaluation & inference
 │   └── run_analysis.md      # Scientific log: metrics + findings per training run
 ├── src/
-│   ├── download_dataset.py  # Figshare API fetcher
-│   ├── prepare_dataset.py   # .mat parser, bbox calc, 2.5D stacker
-│   ├── split_dataset.py     # PID-based train/val/test split + dataset.yaml gen
-│   ├── oversample.py        # Oversamples meningioma+pituitary to glioma parity (seed=42)
+│   ├── data_utils/
+│   │   ├── __init__.py
+│   │   ├── download_dataset.py  # Figshare API fetcher
+│   │   ├── prepare_dataset.py   # .mat parser, bbox calc, 2.5D stacker
+│   │   ├── split_dataset.py     # PID-based train/val/test split + dataset.yaml gen
+│   │   ├── oversample.py        # Oversamples meningioma+pituitary to glioma parity (seed=42)
+│   │   ├── inspect_mat.py       # Helper: MATLAB structure check
+│   │   ├── inspect_mat2.py      # Helper: MATLAB structure check (variant)
+│   │   └── test_alignment.py    # Helper: bbox visual alignment
 │   ├── train.py             # YOLOv11s training script (GPU 8GB optimized, medical augs)
 │   ├── evaluate.py          # Formal evaluation: mAP/P/R on test split via model.val()
 │   ├── predict.py           # Visual inference: 10 random test images, saves annotated JPGs
-│   ├── pipeline.py          # Full orchestrator: train → evaluate → predict (CLI)
-│   ├── inspect_mat.py       # Helper: MATLAB structure check
-│   └── test_alignment.py    # Helper: bbox visual alignment
+│   └── pipeline.py          # Full orchestrator: train → evaluate → predict (CLI)
 ├── run.md                   # Cheatsheet: Conda GPU setup and execution commands
 └── CLAUDE.md                # Claude Code context
 ```
@@ -85,6 +88,6 @@ BrainTumorYolo/
 - **Run 2 (`yolo11s_29_04_1759`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. `label_smoothing=0.1` tested — had no effect (symmetric operation, insensitive to class distribution). Identical trajectory to Run 1.
 
 ## NEXT STEPS
-1. Run 3: `python src/oversample.py` to build `data/oversample_dataset/`, then `python src/pipeline.py`
+1. Run 3: `python src/data_utils/oversample.py` to build `data/oversample_dataset/`, then `python src/pipeline.py`
 2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
    - `<run_name>` is auto-generated as `yolo11s_DD_MM_HHMM` at training start (e.g. `yolo11s_29_04_1430`)
