@@ -40,6 +40,7 @@ BrainTumorYolo/
 │   ├── train.py             # YOLOv11s training script (GPU 8GB optimized, medical augs)
 │   ├── evaluate.py          # Formal evaluation: mAP/P/R on test split via model.val()
 │   ├── predict.py           # Visual inference: 10 random test images, saves annotated JPGs
+│   ├── pipeline.py          # Full orchestrator: train → evaluate → predict (CLI)
 │   ├── inspect_mat.py       # Helper: MATLAB structure check
 │   └── test_alignment.py    # Helper: bbox visual alignment
 ├── run.md                   # Cheatsheet: Conda GPU setup and execution commands
@@ -57,7 +58,5 @@ BrainTumorYolo/
 - [X] `src/predict.py` implemented: samples 10 random test images, runs `model.predict(conf=0.25)`, saves annotated JPGs to `runs/brain_tumor/predict`.
 
 ## NEXT STEPS
-1. Run training: `python src/train.py`
-2. Evaluate: `python src/evaluate.py`
-3. Inspect predictions: `python src/predict.py`
-4. Export to TensorRT: `yolo export model=runs/brain_tumor/yolo11s_run1/weights/best.pt format=engine half=True imgsz=640 workspace=4`
+1. Run full pipeline: `python src/pipeline.py` (or `--epochs N`, `--skip-train`)
+2. Export to TensorRT: `yolo export model=runs/brain_tumor/yolo11s_run1/weights/best.pt format=engine half=True imgsz=640 workspace=4`

@@ -37,10 +37,11 @@ def evaluate(weights_path: Path):
         project=str(ROOT / "runs" / "brain_tumor"),
         name="eval_test",
     )
-    print(f"\nResults saved to: {model.trainer.save_dir if model.trainer else 'runs/brain_tumor/eval_test'}")
-    return metrics
+    save_dir = Path(model.validator.save_dir)
+    print(f"\nResults saved to: {save_dir}")
+    return metrics, save_dir
 
 
 if __name__ == "__main__":
     weights = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_WEIGHTS
-    evaluate(weights)
+    metrics, _ = evaluate(weights)
