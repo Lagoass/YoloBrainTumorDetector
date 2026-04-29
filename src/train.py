@@ -1,5 +1,5 @@
-import os
 import sys
+import time
 from pathlib import Path
 
 from ultralytics import YOLO
@@ -9,7 +9,8 @@ DATA_YAML = str(ROOT / "data" / "dataset" / "dataset.yaml")
 
 
 def train(epochs=100, batch=16):
-    print(f"Starting YOLOv11s training | epochs={epochs} batch={batch}")
+    run_name = f"yolo11s_{time.strftime('%d_%m_%H%M')}"
+    print(f"Starting YOLOv11s training | epochs={epochs} batch={batch} name={run_name}")
     model = YOLO("yolo11s.pt")
 
     try:
@@ -21,7 +22,7 @@ def train(epochs=100, batch=16):
             amp=True,
             workers=4,
             project=str(ROOT / "runs" / "brain_tumor"),
-            name="yolo11s_run1",
+            name=run_name,
             patience=20,
             # Medical augmentation policy
             fliplr=0.5,
@@ -44,7 +45,7 @@ def train(epochs=100, batch=16):
                 amp=True,
                 workers=4,
                 project=str(ROOT / "runs" / "brain_tumor"),
-                name="yolo11s_run1",
+                name=run_name,
                 patience=20,
                 fliplr=0.5,
                 flipud=0.0,

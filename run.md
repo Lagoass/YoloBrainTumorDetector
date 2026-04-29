@@ -29,19 +29,34 @@ pip install ultralytics opencv-python h5py
 
 ---
 
-## 2. Como Rodar o Treino no Dia a Dia (Copy & Paste)
+## 2. Como Rodar no Dia a Dia (Copy & Paste)
 
-Para facilitar seu fluxo de trabalho, você não precisa rodar comando por comando. 
-Sempre que quiser iniciar o treinamento, abra o **Anaconda Prompt (Miniconda3)** e cole o bloco único abaixo:
+Para facilitar seu fluxo de trabalho, você não precisa rodar comando por comando.
+Sempre que quiser executar, abra o **Anaconda Prompt (Miniconda3)** e cole o bloco desejado abaixo:
 
-**Executar Treino Completo (100 épocas):**
+**Pipeline Completo — Treino (100 épocas) → Avaliação → Predição:**
 ```bash
-cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/train.py
+cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/pipeline.py
 ```
 
-**Executar Teste Rápido (Apenas 1 época):**
+**Teste Rápido — Pipeline com 5 épocas:**
 ```bash
-cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/train.py 1
+cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/pipeline.py --epochs 5
 ```
 
-*Nota: A sua RTX 5060 de 8GB está segura. O script `src/train.py` já roda nativamente com `imgsz=640`, `batch=16` e `amp=True` para prevenir Out of Memory (OOM).*
+**Apenas Avaliação + Predição — Pular treino (usa o best.pt existente):**
+```bash
+cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/pipeline.py --skip-train
+```
+
+**Avaliação Standalone — mAP/Precision/Recall no split de teste:**
+```bash
+cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/evaluate.py
+```
+
+**Predição Standalone — Inferência visual em 10 imagens aleatórias do teste:**
+```bash
+cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/predict.py
+```
+
+*Nota: A sua RTX 5060 de 8GB está segura. O pipeline roda nativamente com `imgsz=640`, `batch=16` e `amp=True` para prevenir Out of Memory (OOM).*

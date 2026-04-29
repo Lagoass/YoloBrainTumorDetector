@@ -53,10 +53,11 @@ BrainTumorYolo/
 - [X] Train/Val/Test split by PID (seed=42, 80/10/10). `src/split_dataset.py`.
 - [X] `data/dataset/dataset.yaml` generated (absolute path, nc=3).
 - [X] Local GPU Setup (Miniconda, Python 3.12, CUDA 12.1). Cheatsheet in `run.md`.
-- [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True). Augs: degrees=10.0, hsv_s=0.0.
+- [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True). Augs: degrees=10.0, hsv_s=0.0. Run name auto-generated as `yolo11s_DD_MM_HHMM`.
 - [X] `src/evaluate.py` implemented: runs `model.val(split="test")`, auto-detects latest best.pt, saves metrics to `runs/brain_tumor/eval_test`.
 - [X] `src/predict.py` implemented: samples 10 random test images, runs `model.predict(conf=0.25)`, saves annotated JPGs to `runs/brain_tumor/predict`.
 
 ## NEXT STEPS
 1. Run full pipeline: `python src/pipeline.py` (or `--epochs N`, `--skip-train`)
-2. Export to TensorRT: `yolo export model=runs/brain_tumor/yolo11s_run1/weights/best.pt format=engine half=True imgsz=640 workspace=4`
+2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
+   - `<run_name>` is auto-generated as `yolo11s_DD_MM_HHMM` at training start (e.g. `yolo11s_29_04_1430`)
