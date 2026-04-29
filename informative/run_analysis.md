@@ -32,7 +32,7 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 |---|---|---|---|---|---|
 | yolo11s_29_04_1620 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | Baseline — no class weights |
 | yolo11s_29_04_1759 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | label_smoothing=0.1 — no effect |
-| yolo11s_pending | — | — | — | — | Oversampling meningioma to ~1426 samples |
+| yolo11s_pending | — | — | — | — | Oversampling meningioma (552→1087) + pituitary (767→1087) to glioma parity (seed=42) |
 
 ---
 

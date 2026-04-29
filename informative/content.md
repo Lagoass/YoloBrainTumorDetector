@@ -26,16 +26,26 @@
 BrainTumorYolo/
 ├── data/
 │   ├── raw/                 # 3064 .mat + cvind.mat
-│   └── dataset/
-│       ├── dataset.yaml     # YOLO dataset config (absolute path, nc=3)
+│   ├── dataset/
+│   │   ├── dataset.yaml     # YOLO dataset config (absolute path, nc=3)
+│   │   ├── images/
+│   │   │   ├── all/         # 3064 2.5D .jpg (source, kept intact)
+│   │   │   ├── train/       # 2406 slices (186 PIDs)
+│   │   │   ├── val/         #  373 slices ( 23 PIDs)
+│   │   │   └── test/        #  285 slices ( 24 PIDs)
+│   │   └── labels/
+│   │       ├── all/         # 3064 YOLO .txt (source, kept intact)
+│   │       ├── train/       # meningioma=552, glioma=1087, pituitary=767
+│   │       ├── val/
+│   │       └── test/
+│   └── oversample_dataset/
+│       ├── dataset.yaml     # YOLO config pointing to oversample_dataset (absolute path)
 │       ├── images/
-│       │   ├── all/         # 3064 2.5D .jpg (source, kept intact)
-│       │   ├── train/       # 2406 slices (186 PIDs)
-│       │   ├── val/         #  373 slices ( 23 PIDs)
-│       │   └── test/        #  285 slices ( 24 PIDs)
+│       │   ├── train/       # 3261 slices (meningioma=1087, glioma=1087, pituitary=1087)
+│       │   ├── val/         #  373 slices (unchanged)
+│       │   └── test/        #  285 slices (unchanged)
 │       └── labels/
-│           ├── all/         # 3064 YOLO .txt (source, kept intact)
-│           ├── train/
+│           ├── train/       # 3261 YOLO .txt (oversampled, _os1/_os2 suffixes on dupes)
 │           ├── val/
 │           └── test/
 ├── informative/             
@@ -48,6 +58,7 @@ BrainTumorYolo/
 │   ├── download_dataset.py  # Figshare API fetcher
 │   ├── prepare_dataset.py   # .mat parser, bbox calc, 2.5D stacker
 │   ├── split_dataset.py     # PID-based train/val/test split + dataset.yaml gen
+│   ├── oversample.py        # Oversamples meningioma+pituitary to glioma parity (seed=42)
 │   ├── train.py             # YOLOv11s training script (GPU 8GB optimized, medical augs)
 │   ├── evaluate.py          # Formal evaluation: mAP/P/R on test split via model.val()
 │   ├── predict.py           # Visual inference: 10 random test images, saves annotated JPGs
@@ -67,12 +78,13 @@ BrainTumorYolo/
 - [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True). Augs: degrees=10.0, hsv_s=0.0. Run name auto-generated as `yolo11s_DD_MM_HHMM`. Accepts `data_yaml` parameter (defaults to `OVERSAMPLE_YAML`); constants `DATA_YAML` and `OVERSAMPLE_YAML` defined at module level.
 - [X] `src/evaluate.py` implemented: runs `model.val(split="test")`, auto-detects latest best.pt, saves metrics alongside the run (`<run_dir>/eval_test`). Uses `metrics.save_dir` (not `model.validator.save_dir`) and `project=weights_path.parent.parent`.
 - [X] `src/predict.py` implemented: samples 10 random test images, runs `model.predict(conf=0.25)`, saves annotated JPGs to `<run_dir>/predict`. Uses `project=weights_path.parent.parent`.
+- [X] `src/oversample.py` implemented: copies full dataset to `data/oversample_dataset/`, then duplicates meningioma (552→1087) and pituitary (767→1087) train samples via `random.choices(pool, k=needed)` with `seed=42`. Each duplicate gets `_os1`, `_os2`, ... suffix. Final train: 3261 balanced images. Generates `oversample_dataset/dataset.yaml`.
 
 ## TRAINING RUNS
 - **Run 1 (`yolo11s_29_04_1620`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. Root cause: glioma class imbalance causing overconfidence. See `informative/run_analysis.md`.
 - **Run 2 (`yolo11s_29_04_1759`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. `label_smoothing=0.1` tested — had no effect (symmetric operation, insensitive to class distribution). Identical trajectory to Run 1.
 
 ## NEXT STEPS
-1. Run 3: implement `src/oversample.py` to duplicate meningioma images/labels in the train split to ~1426 samples (glioma parity), then `python src/pipeline.py`
+1. Run 3: `python src/oversample.py` to build `data/oversample_dataset/`, then `python src/pipeline.py`
 2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
    - `<run_name>` is auto-generated as `yolo11s_DD_MM_HHMM` at training start (e.g. `yolo11s_29_04_1430`)
