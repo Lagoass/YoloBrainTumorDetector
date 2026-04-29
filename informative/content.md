@@ -11,6 +11,16 @@
 - Classes: `0: meningioma`, `1: glioma`, `2: pituitary tumor`
 - Stacking Strategy: 2.5D RGB simulated via adjacent Z-slices (Z-1, Z, Z+1) grouped by `PID`. Matrix transposition applied for HDF5 to OpenCV alignment.
 
+### Dataset Class Distribution
+| Class | Slices | % |
+|---|---|---|
+| Meningioma | 708 | 23.1% |
+| Glioma | 1426 | 46.5% |
+| Pituitary tumor | 930 | 30.4% |
+| **Total** | **3064** | 233 patients |
+
+> Glioma is nearly 2× more represented than meningioma. This imbalance is the confirmed root cause of glioma overconfidence observed in Run 1.
+
 ## DIRECTORY STRUCTURE
 ```text
 BrainTumorYolo/
@@ -32,7 +42,8 @@ BrainTumorYolo/
 │   ├── escopo.md            # Macro goals
 │   ├── content.md           # Current LLM context
 │   ├── bigAnalisis.txt      # Source analysis
-│   └── eval_plan.md         # Implementation plan for evaluation & inference
+│   ├── eval_plan.md         # Implementation plan for evaluation & inference
+│   └── run_analysis.md      # Scientific log: metrics + findings per training run
 ├── src/
 │   ├── download_dataset.py  # Figshare API fetcher
 │   ├── prepare_dataset.py   # .mat parser, bbox calc, 2.5D stacker
@@ -57,7 +68,10 @@ BrainTumorYolo/
 - [X] `src/evaluate.py` implemented: runs `model.val(split="test")`, auto-detects latest best.pt, saves metrics alongside the run (`<run_dir>/eval_test`). Uses `metrics.save_dir` (not `model.validator.save_dir`) and `project=weights_path.parent.parent`.
 - [X] `src/predict.py` implemented: samples 10 random test images, runs `model.predict(conf=0.25)`, saves annotated JPGs to `<run_dir>/predict`. Uses `project=weights_path.parent.parent`.
 
+## TRAINING RUNS
+- **Run 1 (`yolo11s_29_04_1620`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. Root cause: glioma class imbalance causing overconfidence. See `informative/run_analysis.md`.
+
 ## NEXT STEPS
-1. Run full pipeline: `python src/pipeline.py` (or `--epochs N`, `--skip-train`)
+1. Run 2: add inverse-frequency class weights to penalize glioma overconfidence — `python src/pipeline.py`
 2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
    - `<run_name>` is auto-generated as `yolo11s_DD_MM_HHMM` at training start (e.g. `yolo11s_29_04_1430`)
