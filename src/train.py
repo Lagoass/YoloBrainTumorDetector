@@ -6,16 +6,17 @@ from ultralytics import YOLO
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_YAML = str(ROOT / "data" / "dataset" / "dataset.yaml")
+OVERSAMPLE_YAML = str(ROOT / "data" / "oversample_dataset" / "dataset.yaml")
 
 
-def train(epochs=100, batch=16):
+def train(epochs=100, batch=16, data_yaml=OVERSAMPLE_YAML):
     run_name = f"yolo11s_{time.strftime('%d_%m_%H%M')}"
     print(f"Starting YOLOv11s training | epochs={epochs} batch={batch} name={run_name}")
     model = YOLO("yolo11s.pt")
 
     try:
         model.train(
-            data=DATA_YAML,
+            data=data_yaml,
             epochs=epochs,
             imgsz=640,
             batch=batch,
@@ -24,10 +25,6 @@ def train(epochs=100, batch=16):
             project=str(ROOT / "runs" / "brain_tumor"),
             name=run_name,
             patience=20,
-            # Focal Loss gamma=2.0: down-weights easy glioma examples and focuses
-            # learning on harder meningioma cases, compensating for class imbalance.
-            fl_gamma=2.0,
-            # Medical augmentation policy
             fliplr=0.5,
             flipud=0.0,
             degrees=10.0,
@@ -41,7 +38,7 @@ def train(epochs=100, batch=16):
         if "out of memory" in str(e).lower() and batch > 8:
             print(f"OOM with batch={batch}, retrying with batch=8")
             model.train(
-                data=DATA_YAML,
+                data=data_yaml,
                 epochs=epochs,
                 imgsz=640,
                 batch=8,
@@ -50,7 +47,6 @@ def train(epochs=100, batch=16):
                 project=str(ROOT / "runs" / "brain_tumor"),
                 name=run_name,
                 patience=20,
-                fl_gamma=2.0,
                 fliplr=0.5,
                 flipud=0.0,
                 degrees=10.0,

@@ -20,6 +20,7 @@ def main():
     parser = argparse.ArgumentParser(description="Brain Tumor YOLO full pipeline")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--skip-train", action="store_true", help="Skip training, use latest best.pt")
+    parser.add_argument("--no-oversample", action="store_true", help="Use base dataset instead of oversampled")
     args = parser.parse_args()
 
     weights_path: Path | None = None
@@ -32,8 +33,9 @@ def main():
             sys.exit(1)
         print(f"Skipping training. Using weights: {weights_path}")
     else:
-        from train import train
-        save_dir = train(epochs=args.epochs)
+        from train import train, DATA_YAML, OVERSAMPLE_YAML
+        data_yaml = DATA_YAML if args.no_oversample else OVERSAMPLE_YAML
+        save_dir = train(epochs=args.epochs, data_yaml=data_yaml)
         weights_path = Path(save_dir) / "weights" / "best.pt"
         print(f"\nTraining complete. Weights: {weights_path}")
 

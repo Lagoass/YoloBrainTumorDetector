@@ -64,14 +64,15 @@ BrainTumorYolo/
 - [X] Train/Val/Test split by PID (seed=42, 80/10/10). `src/split_dataset.py`.
 - [X] `data/dataset/dataset.yaml` generated (absolute path, nc=3).
 - [X] Local GPU Setup (Miniconda, Python 3.12, CUDA 12.1). Cheatsheet in `run.md`.
-- [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True). Augs: degrees=10.0, hsv_s=0.0. Run name auto-generated as `yolo11s_DD_MM_HHMM`. `fl_gamma=2.0` applied: Focal Loss down-weights easy glioma examples and focuses learning on harder meningioma cases.
+- [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True). Augs: degrees=10.0, hsv_s=0.0. Run name auto-generated as `yolo11s_DD_MM_HHMM`. Accepts `data_yaml` parameter (defaults to `OVERSAMPLE_YAML`); constants `DATA_YAML` and `OVERSAMPLE_YAML` defined at module level.
 - [X] `src/evaluate.py` implemented: runs `model.val(split="test")`, auto-detects latest best.pt, saves metrics alongside the run (`<run_dir>/eval_test`). Uses `metrics.save_dir` (not `model.validator.save_dir`) and `project=weights_path.parent.parent`.
 - [X] `src/predict.py` implemented: samples 10 random test images, runs `model.predict(conf=0.25)`, saves annotated JPGs to `<run_dir>/predict`. Uses `project=weights_path.parent.parent`.
 
 ## TRAINING RUNS
 - **Run 1 (`yolo11s_29_04_1620`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. Root cause: glioma class imbalance causing overconfidence. See `informative/run_analysis.md`.
+- **Run 2 (`yolo11s_29_04_1759`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. `label_smoothing=0.1` tested — had no effect (symmetric operation, insensitive to class distribution). Identical trajectory to Run 1.
 
 ## NEXT STEPS
-1. Run 2: execute with `fl_gamma=2.0` already baked into `src/train.py` — `python src/pipeline.py`
+1. Run 3: implement `src/oversample.py` to duplicate meningioma images/labels in the train split to ~1426 samples (glioma parity), then `python src/pipeline.py`
 2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
    - `<run_name>` is auto-generated as `yolo11s_DD_MM_HHMM` at training start (e.g. `yolo11s_29_04_1430`)
