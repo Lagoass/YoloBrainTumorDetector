@@ -43,7 +43,7 @@ def predict(weights_path: Path, n: int = 10, conf: float = 0.25):
         save=True,
         conf=conf,
         imgsz=640,
-        project=str(ROOT / "runs" / "brain_tumor"),
+        project=str(weights_path.parent.parent),
         name="predict",
     )
 

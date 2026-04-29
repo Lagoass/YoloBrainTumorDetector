@@ -34,10 +34,10 @@ def evaluate(weights_path: Path):
         split="test",
         imgsz=640,
         batch=16,
-        project=str(ROOT / "runs" / "brain_tumor"),
+        project=str(weights_path.parent.parent),
         name="eval_test",
     )
-    save_dir = Path(model.validator.save_dir)
+    save_dir = Path(metrics.save_dir)
     print(f"\nResults saved to: {save_dir}")
     return metrics, save_dir
 
