@@ -24,6 +24,9 @@ def train(epochs=100, batch=16):
             project=str(ROOT / "runs" / "brain_tumor"),
             name=run_name,
             patience=20,
+            # Focal Loss gamma=2.0: down-weights easy glioma examples and focuses
+            # learning on harder meningioma cases, compensating for class imbalance.
+            fl_gamma=2.0,
             # Medical augmentation policy
             fliplr=0.5,
             flipud=0.0,
@@ -47,6 +50,7 @@ def train(epochs=100, batch=16):
                 project=str(ROOT / "runs" / "brain_tumor"),
                 name=run_name,
                 patience=20,
+                fl_gamma=2.0,
                 fliplr=0.5,
                 flipud=0.0,
                 degrees=10.0,
