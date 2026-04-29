@@ -38,6 +38,8 @@ BrainTumorYolo/
 │   ├── prepare_dataset.py   # .mat parser, bbox calc, 2.5D stacker
 │   ├── split_dataset.py     # PID-based train/val/test split + dataset.yaml gen
 │   ├── train.py             # YOLOv11s training script (GPU 8GB optimized, medical augs)
+│   ├── evaluate.py          # Formal evaluation: mAP/P/R on test split via model.val()
+│   ├── predict.py           # Visual inference: 10 random test images, saves annotated JPGs
 │   ├── inspect_mat.py       # Helper: MATLAB structure check
 │   └── test_alignment.py    # Helper: bbox visual alignment
 ├── run.md                   # Cheatsheet: Conda GPU setup and execution commands
@@ -50,9 +52,12 @@ BrainTumorYolo/
 - [X] Train/Val/Test split by PID (seed=42, 80/10/10). `src/split_dataset.py`.
 - [X] `data/dataset/dataset.yaml` generated (absolute path, nc=3).
 - [X] Local GPU Setup (Miniconda, Python 3.12, CUDA 12.1). Cheatsheet in `run.md`.
-- [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True).
+- [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True). Augs: degrees=10.0, hsv_s=0.0.
+- [X] `src/evaluate.py` implemented: runs `model.val(split="test")`, auto-detects latest best.pt, saves metrics to `runs/brain_tumor/eval_test`.
+- [X] `src/predict.py` implemented: samples 10 random test images, runs `model.predict(conf=0.25)`, saves annotated JPGs to `runs/brain_tumor/predict`.
 
 ## NEXT STEPS
-1. Read `informative/eval_plan.md`.
-2. Implement `src/evaluate.py` to generate formal scientific metrics on the `test` split.
-3. Implement `src/predict.py` to generate visual bounding box predictions on unseen medical images.
+1. Run training: `python src/train.py`
+2. Evaluate: `python src/evaluate.py`
+3. Inspect predictions: `python src/predict.py`
+4. Export to TensorRT: `yolo export model=runs/brain_tumor/yolo11s_run1/weights/best.pt format=engine half=True imgsz=640 workspace=4`

@@ -26,11 +26,11 @@ def train(epochs=100, batch=16):
             # Medical augmentation policy
             fliplr=0.5,
             flipud=0.0,
-            degrees=15.0,
+            degrees=10.0,
             mosaic=0.5,
             mixup=0.0,
             hsv_v=0.2,
-            hsv_s=0.2,
+            hsv_s=0.0,
             close_mosaic=10,
         )
     except RuntimeError as e:
@@ -48,11 +48,11 @@ def train(epochs=100, batch=16):
                 patience=20,
                 fliplr=0.5,
                 flipud=0.0,
-                degrees=15.0,
+                degrees=10.0,
                 mosaic=0.5,
                 mixup=0.0,
                 hsv_v=0.2,
-                hsv_s=0.2,
+                hsv_s=0.0,
                 close_mosaic=10,
             )
         else:

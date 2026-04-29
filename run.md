@@ -12,7 +12,7 @@ Copie e cole os comandos abaixo, linha por linha, no Anaconda Prompt:
 
 ```bash
 # 1. Navegar até a pasta do projeto
-cd C:\Users\gulag\Documents\AiHealthCare\BrainTumorYolo
+cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector
 
 # 2. Criar o ambiente isolado com Python 3.12
 conda create -n yolov11 python=3.12 -y
@@ -36,12 +36,12 @@ Sempre que quiser iniciar o treinamento, abra o **Anaconda Prompt (Miniconda3)**
 
 **Executar Treino Completo (100 épocas):**
 ```bash
-cd C:\Users\gulag\Documents\AiHealthCare\BrainTumorYolo && conda activate yolov11 && python src/train.py
+cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/train.py
 ```
 
 **Executar Teste Rápido (Apenas 1 época):**
 ```bash
-cd C:\Users\gulag\Documents\AiHealthCare\BrainTumorYolo && conda activate yolov11 && python src/train.py 1
+cd C:\Users\gulag\Documents\AiHealthCare\YoloBrainTumorDetector && conda activate yolov11 && python src/train.py 1
 ```
 
 *Nota: A sua RTX 5060 de 8GB está segura. O script `src/train.py` já roda nativamente com `imgsz=640`, `batch=16` e `amp=True` para prevenir Out of Memory (OOM).*
