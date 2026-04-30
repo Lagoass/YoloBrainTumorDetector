@@ -24,6 +24,8 @@ def main():
     args = parser.parse_args()
 
     weights_path: Path | None = None
+    trainer = None
+    data_yaml_used: str | None = None
 
     # --- Train ---
     if args.skip_train:
@@ -34,8 +36,9 @@ def main():
         print(f"Skipping training. Using weights: {weights_path}")
     else:
         from train import train, DATA_YAML, OVERSAMPLE_YAML
-        data_yaml = DATA_YAML if args.no_oversample else OVERSAMPLE_YAML
-        save_dir = train(epochs=args.epochs, data_yaml=data_yaml)
+        data_yaml_used = DATA_YAML if args.no_oversample else OVERSAMPLE_YAML
+        save_dir, trained_model = train(epochs=args.epochs, data_yaml=data_yaml_used)
+        trainer = trained_model.trainer
         weights_path = Path(save_dir) / "weights" / "best.pt"
         print(f"\nTraining complete. Weights: {weights_path}")
 
@@ -54,12 +57,37 @@ def main():
     precision = getattr(metrics.box, "mp", None)
     recall = getattr(metrics.box, "mr", None)
 
+    # --- Training metadata ---
+    best_epoch = total_time = early_stopped = None
+    if trainer is not None:
+        best_epoch = getattr(trainer, "best_epoch", None)
+        total_time = getattr(trainer, "t", None)  # seconds elapsed
+        epochs_run = getattr(trainer, "epoch", None)  # last epoch index (0-based)
+        max_epochs = getattr(trainer, "epochs", args.epochs)
+        if epochs_run is not None:
+            early_stopped = (epochs_run + 1) < max_epochs
+
     print("\n" + "=" * 60)
     print("PIPELINE SUMMARY")
     print("=" * 60)
     print(f"  Weights     : {weights_path}")
     print(f"  Eval dir    : {eval_save_dir}")
     print(f"  Predictions : {predict_save_dir}")
+    print()
+    if data_yaml_used is not None:
+        label = "oversample" if "oversample" in data_yaml_used else "base"
+        print(f"  Dataset     : {label} ({Path(data_yaml_used).name})")
+    if best_epoch is not None:
+        print(f"  Best epoch  : {best_epoch + 1}")
+    if total_time is not None:
+        h, rem = divmod(int(total_time), 3600)
+        m, s = divmod(rem, 60)
+        print(f"  Train time  : {h:02d}h {m:02d}m {s:02d}s")
+    if early_stopped is not None:
+        if early_stopped:
+            print(f"  Early stop  : yes (stopped at epoch {epochs_run + 1}/{max_epochs})")
+        else:
+            print(f"  Early stop  : no (full {max_epochs} epochs)")
     print()
     if map50 is not None:
         print(f"  mAP@0.50    : {map50:.4f}")

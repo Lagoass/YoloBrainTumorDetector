@@ -59,7 +59,7 @@ def train(epochs=100, batch=16, data_yaml=OVERSAMPLE_YAML):
         else:
             raise
     
-    return model.trainer.save_dir
+    return model.trainer.save_dir, model
 
 def export(save_dir):
     best = Path(save_dir) / "weights" / "best.pt"
@@ -70,6 +70,6 @@ def export(save_dir):
 
 if __name__ == "__main__":
     epochs = int(sys.argv[1]) if len(sys.argv) > 1 else 100
-    save_dir = train(epochs=epochs)
+    save_dir, _ = train(epochs=epochs)
     if epochs >= 100:
         export(save_dir)
