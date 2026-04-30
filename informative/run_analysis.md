@@ -32,7 +32,7 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 |---|---|---|---|---|---|
 | yolo11s_29_04_1620 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | Baseline — no class weights |
 | yolo11s_29_04_1759 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | label_smoothing=0.1 — no effect |
-| yolo11s_pending | — | — | — | — | Oversampling meningioma (552→1087) + pituitary (767→1087) to glioma parity (seed=42) |
+| yolo11s_29_04_2007 | 0.9290 | 0.6212 | 0.9301 | 0.8844 | Oversampling meningioma+pituitary to glioma parity (seed=42) |
 
 ---
 
@@ -91,3 +91,32 @@ Class imbalance: glioma is the most represented class in the dataset. The model 
 
 ### Conclusion & Next Run Plan
 Oversample meningioma before training to balance class distribution at the data level. Create `src/oversample.py` to duplicate meningioma images/labels in the train split until reaching glioma parity (~1426 samples).
+
+---
+
+## yolo11s_29_04_2007
+
+### Metrics (test split)
+| Metric | Value |
+|---|---|
+| mAP@0.50 | 0.9290 |
+| mAP@0.5:0.95 | 0.6212 |
+| Precision | 0.9301 |
+| Recall | 0.8844 |
+
+### Run-specific Changes
+Oversampling applied — meningioma 552→1087, pituitary 767→1087, glioma unchanged at 1087. Pipeline uses `data/oversample_dataset/dataset.yaml`.
+
+### Confusion Matrix Findings
+| Class | True Positive Rate | Notes |
+|---|---|---|
+| Meningioma | 0.76 | +0.02 vs Run 1 — oversampling improved minority class |
+| Glioma | 0.79 | +0.01 vs Run 1 — marginal improvement |
+| Pituitary | 0.79 | -0.08 vs Run 1 — expected trade-off: oversample repetitions reduced effective diversity |
+| Background → Glioma | 0.78 FP rate | Unchanged — bias persists despite balanced classes |
+
+### Root Cause
+Background→Glioma bias persists despite balanced classes, suggesting the problem is partially intrinsic to glioma's diffuse visual appearance in T1 MRI rather than purely a data distribution issue.
+
+### Conclusion & Next Run Plan
+Oversampling confirmed correct direction. All global metrics improved, especially mAP@0.5:0.95 (+0.0744) and Recall (+0.0391). Next step: to be defined.

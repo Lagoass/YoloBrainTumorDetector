@@ -86,6 +86,7 @@ BrainTumorYolo/
 ## TRAINING RUNS
 - **Run 1 (`yolo11s_29_04_1620`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. Root cause: glioma class imbalance causing overconfidence. See `informative/run_analysis.md`.
 - **Run 2 (`yolo11s_29_04_1759`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. `label_smoothing=0.1` tested — had no effect (symmetric operation, insensitive to class distribution). Identical trajectory to Run 1.
+- **Run 3 (`yolo11s_29_04_2007`):** mAP@0.50=0.9290, mAP@0.5:0.95=0.6212, P=0.9301, R=0.8844. Oversampling confirmed effective.
 
 ## NEXT STEPS
 1. Run 3: `python src/data_utils/oversample.py` to build `data/oversample_dataset/`, then `python src/pipeline.py`
