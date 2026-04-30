@@ -78,7 +78,7 @@ BrainTumorYolo/
 - [X] Train/Val/Test split by PID (seed=42, 80/10/10). `src/split_dataset.py`.
 - [X] `data/dataset/dataset.yaml` generated (absolute path, nc=3).
 - [X] Local GPU Setup (Miniconda, Python 3.12, CUDA 12.1). Cheatsheet in `run.md`.
-- [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True). Augs: degrees=10.0, hsv_s=0.0. Run name auto-generated as `yolo11s_DD_MM_HHMM`. Accepts `data_yaml` parameter (defaults to `OVERSAMPLE_YAML`); constants `DATA_YAML` and `OVERSAMPLE_YAML` defined at module level.
+- [X] `src/train.py` written and verified running on RTX 5060 (imgsz=640, batch=16, amp=True). Augs: degrees=10.0, hsv_s=0.0. `cos_lr=True`, `patience=15`. Run name auto-generated as `yolo11s_DD_MM_HHMM`. Accepts `data_yaml` parameter (defaults to `OVERSAMPLE_YAML`); constants `DATA_YAML` and `OVERSAMPLE_YAML` defined at module level.
 - [X] `src/evaluate.py` implemented: runs `model.val(split="test")`, auto-detects latest best.pt, saves metrics alongside the run (`<run_dir>/eval_test`). Uses `metrics.save_dir` (not `model.validator.save_dir`) and `project=weights_path.parent.parent`.
 - [X] `src/predict.py` implemented: samples 10 random test images, runs `model.predict(conf=0.25)`, saves annotated JPGs to `<run_dir>/predict`. Uses `project=weights_path.parent.parent`.
 - [X] `src/oversample.py` implemented: copies full dataset to `data/oversample_dataset/`, then duplicates meningioma (552→1087) and pituitary (767→1087) train samples via `random.choices(pool, k=needed)` with `seed=42`. Each duplicate gets `_os1`, `_os2`, ... suffix. Final train: 3261 balanced images. Generates `oversample_dataset/dataset.yaml`.
@@ -89,6 +89,5 @@ BrainTumorYolo/
 - **Run 3 (`yolo11s_29_04_2007`):** mAP@0.50=0.9290, mAP@0.5:0.95=0.6212, P=0.9301, R=0.8844. Oversampling confirmed effective.
 
 ## NEXT STEPS
-1. Run 3: `python src/data_utils/oversample.py` to build `data/oversample_dataset/`, then `python src/pipeline.py`
+1. Run 4: `python src/pipeline.py` — cos_lr=True + patience=15 applied. Expected: later best epoch, less oscillation, potential mAP@0.5:0.95 improvement.
 2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
-   - `<run_name>` is auto-generated as `yolo11s_DD_MM_HHMM` at training start (e.g. `yolo11s_29_04_1430`)

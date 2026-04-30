@@ -33,6 +33,7 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 | yolo11s_29_04_1620 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | Baseline — no class weights |
 | yolo11s_29_04_1759 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | label_smoothing=0.1 — no effect |
 | yolo11s_29_04_2007 | 0.9290 | 0.6212 | 0.9301 | 0.8844 | Oversampling meningioma+pituitary to glioma parity (seed=42) |
+| yolo11s_pending | — | — | — | — | cos_lr=True + patience=15 (fix oscillation after epoch 36) |
 
 ---
 
@@ -119,4 +120,6 @@ Oversampling applied — meningioma 552→1087, pituitary 767→1087, glioma unc
 Background→Glioma bias persists despite balanced classes, suggesting the problem is partially intrinsic to glioma's diffuse visual appearance in T1 MRI rather than purely a data distribution issue.
 
 ### Conclusion & Next Run Plan
-Oversampling confirmed correct direction. All global metrics improved, especially mAP@0.5:0.95 (+0.0744) and Recall (+0.0391). Next step: to be defined.
+Oversampling confirmed correct direction. All global metrics improved, especially mAP@0.5:0.95 (+0.0744) and Recall (+0.0391).
+
+Post-run analysis: `best.pt` was saved at epoch 36, with severe oscillation for the remaining 64 epochs — a clear sign of LR instability after the warmup phase ends. Fix: `cos_lr=True` for smooth monotonic decay + `patience=15` to stop earlier if no improvement.
