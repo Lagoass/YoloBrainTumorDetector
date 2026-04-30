@@ -49,11 +49,12 @@ BrainTumorYolo/
 │           ├── val/
 │           └── test/
 ├── informative/             
-│   ├── escopo.md            # Macro goals
-│   ├── content.md           # Current LLM context
-│   ├── bigAnalisis.txt      # Source analysis
-│   ├── eval_plan.md         # Implementation plan for evaluation & inference
-│   └── run_analysis.md      # Scientific log: metrics + findings per training run
+│   ├── escopo.md                # Macro goals
+│   ├── content.md               # Current LLM context
+│   ├── bigAnalisis.txt          # Source analysis
+│   ├── eval_plan.md             # Implementation plan for evaluation & inference
+│   ├── run_analysis.md          # Scientific log: metrics + findings per training run
+│   └── analysis_notebook.ipynb  # Interactive analysis: learning curves, loss, confusion matrices, F1
 ├── src/
 │   ├── data_utils/
 │   │   ├── __init__.py
@@ -82,6 +83,7 @@ BrainTumorYolo/
 - [X] `src/evaluate.py` implemented: runs `model.val(split="test")`, auto-detects latest best.pt, saves metrics alongside the run (`<run_dir>/eval_test`). Uses `metrics.save_dir` (not `model.validator.save_dir`) and `project=weights_path.parent.parent`.
 - [X] `src/predict.py` implemented: samples 10 random test images, runs `model.predict(conf=0.25)`, saves annotated JPGs to `<run_dir>/predict`. Uses `project=weights_path.parent.parent`.
 - [X] `src/oversample.py` implemented: copies full dataset to `data/oversample_dataset/`, then duplicates meningioma (552→1087) and pituitary (767→1087) train samples via `random.choices(pool, k=needed)` with `seed=42`. Each duplicate gets `_os1`, `_os2`, ... suffix. Final train: 3261 balanced images. Generates `oversample_dataset/dataset.yaml`.
+- [X] `informative/analysis_notebook.ipynb` created: 7-section interactive analysis covering run config, learning curves, loss curves, convergence table, global metrics bar chart, confusion matrices, and F1-confidence curves. Auto-detects runs from `runs/brain_tumor/*/results.csv`.
 
 ## TRAINING RUNS
 - **Run 1 (`yolo11s_29_04_1620`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. Root cause: glioma class imbalance causing overconfidence. See `informative/run_analysis.md`.
