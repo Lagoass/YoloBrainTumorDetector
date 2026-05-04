@@ -14,7 +14,8 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 | imgsz | 640 |
 | batch | 16 |
 | amp | True |
-| patience | 20 |
+| patience | 15 |
+| cos_lr | True |
 | fliplr | 0.5 |
 | flipud | 0.0 |
 | degrees | 10.0 |
@@ -35,7 +36,8 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 | yolo11s_29_04_1620 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | Baseline — no class weights |
 | yolo11s_29_04_1759 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | label_smoothing=0.1 — no effect |
 | yolo11s_29_04_2007 | 0.9290 | 0.6212 | 0.9301 | 0.8844 | Oversampling meningioma+pituitary to glioma parity (seed=42) |
-| yolo11s_pending | — | — | — | — | cos_lr=True + patience=15 (fix oscillation after epoch 36) |
+| yolo11s_03_05_2240 | 0.9236 | 0.5659 | 0.8763 | 0.8723 | 2D puro (sem 2.5D) + cos_lr=True + patience=15 + sem oversample |
+| yolo11s_pending | — | — | — | — | 2D puro + oversampling (Run 3 strategy on clean data) |
 
 ---
 
@@ -125,3 +127,32 @@ Background→Glioma bias persists despite balanced classes, suggesting the probl
 Oversampling confirmed correct direction. All global metrics improved, especially mAP@0.5:0.95 (+0.0744) and Recall (+0.0391).
 
 Post-run analysis: `best.pt` was saved at epoch 36, with severe oscillation for the remaining 64 epochs — a clear sign of LR instability after the warmup phase ends. Fix: `cos_lr=True` for smooth monotonic decay + `patience=15` to stop earlier if no improvement.
+
+---
+
+## yolo11s_03_05_2240
+
+### Metrics (test split)
+| Metric | Value |
+|---|---|
+| mAP@0.50 | 0.9236 |
+| mAP@0.5:0.95 | 0.5659 |
+| Precision | 0.8763 |
+| Recall | 0.8723 |
+
+### Run-specific Changes
+First run on corrected pure 2D data (min-max normalized, 3-channel RGB replicated). No oversampling. cos_lr=True, patience=15. Early stop at epoch 55.
+
+### Confusion Matrix Findings
+| Class | True Positive Rate | Notes |
+|---|---|---|
+| Meningioma | 0.80 | +0.06 vs Run 1 — largest single-class gain across all runs. Clean 2D data directly improved the hardest class. |
+| Glioma | 0.71 | -0.07 vs Run 1 — regression. 2.5D noise accidentally reinforced diffuse glioma textures. Without it, model is less confident on glioma. |
+| Pituitary | 0.85 | -0.02 vs Run 1 — stable, minor drop. |
+| Background → Glioma | 0.68 FP rate | -0.09 vs Run 1 — significant improvement. Clean inputs reduced false positive glioma predictions on background. |
+
+### Root Cause
+Pure 2D inputs improved data quality and reduced background bias. However, class imbalance (glioma 46.5% of dataset) now dominates without the accidental texture reinforcement from corrupted 2.5D channels. Glioma needs oversampling compensation on clean data.
+
+### Conclusion & Next Run Plan
+Run 5 = 2D puro + oversampling. Expected to combine meningioma gains from clean data with glioma recovery from balanced classes.

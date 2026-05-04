@@ -90,7 +90,8 @@ BrainTumorYolo/
 - **Run 1 (`yolo11s_29_04_1620`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. Root cause: glioma class imbalance causing overconfidence. See `informative/run_analysis.md`.
 - **Run 2 (`yolo11s_29_04_1759`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. `label_smoothing=0.1` tested — had no effect (symmetric operation, insensitive to class distribution). Identical trajectory to Run 1.
 - **Run 3 (`yolo11s_29_04_2007`):** mAP@0.50=0.9290, mAP@0.5:0.95=0.6212, P=0.9301, R=0.8844. Oversampling confirmed effective.
+- **Run 4 (`yolo11s_03_05_2240`):** mAP@0.50=0.9236, mAP@0.5:0.95=0.5659, P=0.8763, R=0.8723. First run on corrected pure 2D data. Meningioma +0.06 (best gain across all runs); glioma -0.07 (class imbalance without 2.5D noise crutch); background→glioma FP rate -0.09. Early stop at epoch 55.
 
 ## NEXT STEPS
-1. Run 4: `python src/pipeline.py` — cos_lr=True + patience=15 applied. Expected: later best epoch, less oscillation, potential mAP@0.5:0.95 improvement.
+1. Run 5: `python src/data_utils/oversample.py` then `python src/pipeline.py` — 2D puro + oversampling. Expected to combine meningioma gains from clean data with glioma recovery from balanced classes.
 2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
