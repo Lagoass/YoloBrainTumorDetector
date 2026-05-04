@@ -75,68 +75,28 @@ def main():
     # Get all .mat files except cvind.mat
     mat_files = [f for f in os.listdir(raw_dir) if f.endswith('.mat') and f != "cvind.mat"]
     
-    print("Reading metadata to group by PID...")
-    files_by_pid = {}
-    
-    for f in tqdm(mat_files, desc="Parsing metadata"):
+    for f in tqdm(mat_files, desc="Generating 2D dataset"):
         path = os.path.join(raw_dir, f)
-        idx = int(f.split('.')[0])
+        base_name = f.split('.')[0]
         try:
-            pid, label, image, border = process_mat_file(path)
-            if pid not in files_by_pid:
-                files_by_pid[pid] = []
-            files_by_pid[pid].append({
-                'filename': f,
-                'idx': idx,
-                'label': label,
-                'image': image,
-                'border': border
-            })
-        except Exception as e:
-            print(f"Error processing {f}: {e}")
-            
-    print(f"Found {len(files_by_pid)} unique patients.")
-    
-    # Now create 2.5D slices per patient
-    for pid, slices in tqdm(files_by_pid.items(), desc="Generating 2.5D dataset"):
-        # Sort slices by index (assuming index correlates with spatial Z-axis)
-        slices = sorted(slices, key=lambda x: x['idx'])
-        num_slices = len(slices)
-        
-        for i in range(num_slices):
-            curr_slice = slices[i]
-            prev_slice = slices[i - 1] if i > 0 else curr_slice
-            next_slice = slices[i + 1] if i < num_slices - 1 else curr_slice
-            
-            img_prev = prev_slice['image']
-            img_curr = curr_slice['image']
-            img_next = next_slice['image']
-            
-            # Normalize to 8-bit
-            img_prev_8u = cv2.normalize(img_prev, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-            img_curr_8u = cv2.normalize(img_curr, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-            img_next_8u = cv2.normalize(img_next, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-            
-            # Stack to create 2.5D image (Z-1, Z, Z+1).
-            # We'll save it as a standard BGR image using cv2
-            img_25d = np.stack((img_prev_8u, img_curr_8u, img_next_8u), axis=-1)
-            
-            # Calculate YOLO bounding box
-            h, w = img_curr.shape
-            x_c, y_c, bw, bh = calculate_yolo_bbox(curr_slice['border'], w, h)
-            label = curr_slice['label']
-            
-            # Formulate output filenames
-            base_name = str(curr_slice['idx'])
+            _, label, image, border = process_mat_file(path)
+
+            # Min-max normalize to uint8 and replicate to 3-channel RGB
+            img_8u = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+            img_rgb = np.stack((img_8u, img_8u, img_8u), axis=-1)
+
+            h, w = image.shape
+            x_c, y_c, bw, bh = calculate_yolo_bbox(border, w, h)
+
             img_path = os.path.join(images_dir, f"{base_name}.jpg")
             lbl_path = os.path.join(labels_dir, f"{base_name}.txt")
-            
-            # Save image
-            cv2.imwrite(img_path, img_25d)
-            
-            # Save label
+
+            cv2.imwrite(img_path, img_rgb)
+
             with open(lbl_path, "w") as lf:
                 lf.write(f"{label} {x_c:.6f} {y_c:.6f} {bw:.6f} {bh:.6f}\n")
+        except Exception as e:
+            print(f"Error processing {f}: {e}")
 
     print("Dataset preparation complete!")
 

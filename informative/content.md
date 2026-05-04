@@ -9,7 +9,8 @@
 - Source Data: 3064 MATLAB v7.3 `.mat` files (MRI 512x512, `tumorBorder` vector)
 - Target Format: YOLO bounding boxes `[class x_center y_center width height]` normalized.
 - Classes: `0: meningioma`, `1: glioma`, `2: pituitary tumor`
-- Stacking Strategy: 2.5D RGB simulated via adjacent Z-slices (Z-1, Z, Z+1) grouped by `PID`. Matrix transposition applied for HDF5 to OpenCV alignment.
+- Stacking Strategy: Pure 2D: each .mat converted individually. Min-max normalized to uint8, replicated to 3-channel RGB for YOLO compatibility. Matrix transposition applied for HDF5 to OpenCV alignment.
+- **Note:** All 3064 images must be regenerated (`python src/data_utils/prepare_dataset.py`) before next training run.
 
 ### Dataset Class Distribution
 | Class | Slices | % |
@@ -59,7 +60,7 @@ BrainTumorYolo/
 │   ├── data_utils/
 │   │   ├── __init__.py
 │   │   ├── download_dataset.py  # Figshare API fetcher
-│   │   ├── prepare_dataset.py   # .mat parser, bbox calc, 2.5D stacker
+│   │   ├── prepare_dataset.py   # .mat parser, bbox calc, 2D RGB converter
 │   │   ├── split_dataset.py     # PID-based train/val/test split + dataset.yaml gen
 │   │   ├── oversample.py        # Oversamples meningioma+pituitary to glioma parity (seed=42)
 │   │   ├── inspect_mat.py       # Helper: MATLAB structure check

@@ -26,6 +26,8 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 
 ---
 
+> **Data integrity note:** Runs 1–3 were trained on corrupted 2.5D data. The Z-slice grouping by PID was incorrect — adjacent slices belonged to different patients, producing random channel stacking with no anatomical meaning. Run 4 onwards uses corrected pure 2D inputs (each .mat converted individually, min-max normalized, replicated to 3-channel RGB). All 3064 images must be regenerated before Run 4.
+
 ## Run Comparison Table
 
 | Run | mAP@0.50 | mAP@0.5:0.95 | Precision | Recall | Key Change |
