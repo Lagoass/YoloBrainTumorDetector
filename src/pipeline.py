@@ -69,6 +69,13 @@ def main():
         from train import BRISC_YAML as _data_yaml
     metrics, eval_save_dir = evaluate(weights_path, data_yaml=_data_yaml)
 
+    # --- Healthy FPR (BRISC only) ---
+    fpr_results: tuple | None = None
+    if args.dataset == "brisc":
+        from evaluate import healthy_fpr
+        brisc_test_images = ROOT / "data" / "brisc_dataset" / "images" / "test"
+        fpr_results = healthy_fpr(weights_path, brisc_test_images, data_yaml=_data_yaml)
+
     # --- Predict ---
     from predict import predict
     if args.dataset == "brisc":
@@ -122,6 +129,14 @@ def main():
         print(f"  Precision   : {precision:.4f}")
     if recall is not None:
         print(f"  Recall      : {recall:.4f}")
+    if fpr_results is not None:
+        total_healthy, fp_count, fp_rate = fpr_results
+        clean_count = total_healthy - fp_count
+        print()
+        print("  -- Healthy Brain Analysis --")
+        print(f"  Healthy test images : {total_healthy}")
+        print(f"  False positives     : {fp_count}  ({fp_rate:.1%})")
+        print(f"  Clean predictions   : {clean_count}  ({1 - fp_rate:.1%})")
     print("=" * 60)
 
 

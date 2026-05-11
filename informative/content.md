@@ -120,9 +120,9 @@ BrainTumorYolo/
 - [X] `data/dataset/dataset.yaml` generated (absolute path, nc=3).
 - [X] Local GPU Setup (Miniconda, Python 3.12, CUDA 12.1). Cheatsheet in `run.md`.
 - [X] `src/train.py`: constants `DATA_YAML`, `OVERSAMPLE_YAML`, `BRISC_YAML` defined at module level. Accepts `data_yaml` parameter (defaults to `OVERSAMPLE_YAML`). Runs on RTX 5060 (imgsz=640, batch=16, amp=True). `patience=30` (raised from 15 after Run 6 early-stop diagnosis). Run name auto-generated as `yolo11s_DD_MM_HHMM`.
-- [X] `src/evaluate.py`: runs `model.val(split="test")`, accepts `data_yaml` parameter (defaults to `DATA_YAML`). Auto-detects latest best.pt. Saves to `<run_dir>/eval_test`.
+- [X] `src/evaluate.py`: `evaluate()` runs `model.val(split="test")`, accepts `data_yaml` parameter. `healthy_fpr(weights_path, test_images_dir, data_yaml)` runs inference on all empty-label (no_tumor) files in `brisc_dataset/labels/test/`, counts images that produce ≥1 bbox prediction, returns `(total_healthy, fp_count, fp_rate)`.
 - [X] `src/predict.py`: samples 10 random test images, runs `model.predict(conf=0.25)`. Accepts `test_images_dir` parameter (defaults to figshare test dir). Saves annotated JPGs to `<run_dir>/predict`.
-- [X] `src/pipeline.py`: `--dataset {figshare,figshare_oversample,brisc}` flag (default: `figshare`) selects yaml and test dir for all three pipeline stages. Replaces the old `--no-oversample` flag.
+- [X] `src/pipeline.py`: `--dataset {figshare,figshare_oversample,brisc}` flag (default: `figshare`) selects yaml and test dir for all three pipeline stages. When `--dataset brisc`, calls `healthy_fpr()` after `evaluate()` and prints a "Healthy Brain Analysis" block in the summary (healthy images, false positive count/%, clean count/%).
 - [X] `src/data_utils/prepare_dataset_brisc.py`: reads `manifest.csv`, processes segmentation_task images (mask PNG→YOLO bbox) + classification no_tumor images (empty label), normalizes to uint8, splits 80/10/10 stratified by class+plane, generates `data/brisc_dataset/dataset.yaml` (nc=3, same class indices as Figshare). Run: `python src/data_utils/prepare_dataset_brisc.py`.
 - [X] `src/oversample.py` implemented: copies full dataset to `data/oversample_dataset/`, then duplicates meningioma (552→1087) and pituitary (767→1087) train samples via `random.choices(pool, k=needed)` with `seed=42`. Each duplicate gets `_os1`, `_os2`, ... suffix. Final train: 3261 balanced images. Generates `oversample_dataset/dataset.yaml`.
 - [X] `informative/analysis_notebook.ipynb` created: 7-section interactive analysis covering run config, learning curves, loss curves, convergence table, global metrics bar chart, confusion matrices, and F1-confidence curves. Auto-detects runs from `runs/brain_tumor/*/results.csv`.
@@ -137,5 +137,5 @@ BrainTumorYolo/
 - **Run 7 (`yolo11s_11_05_1621`):** mAP@0.50=0.9195, mAP@0.5:0.95=0.5907, P=0.9178, R=0.8840. Best model of the project. BRISC 2025 + patience=30, full 100 epochs, best epoch 62. Pituitary 0.96 — best single-class result ever; meningioma 0.94 maintained; glioma 0.85 (+0.09 vs Run 6); background→glioma FP 0.50 (vs 0.87 in Run 5 Figshare).
 
 ## NEXT STEPS
-1. Implement FPR metric on healthy images in `src/evaluate.py`: count detections on no_tumor test images (ground truth = 0 boxes) to directly measure background suppression from BRISC negative samples.
+1. Run FPR analysis on Run 7: `python src/pipeline.py --dataset brisc --skip-train` to get healthy brain false positive rate.
 2. Export to TensorRT: `yolo export model=runs/brain_tumor/yolo11s_11_05_1621/weights/best.pt format=engine half=True imgsz=640 workspace=4`
