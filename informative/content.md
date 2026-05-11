@@ -134,7 +134,8 @@ BrainTumorYolo/
 - **Run 4 (`yolo11s_03_05_2240`):** mAP@0.50=0.9236, mAP@0.5:0.95=0.5659, P=0.8763, R=0.8723. First run on corrected pure 2D data. Meningioma +0.06 (best gain across all runs); glioma -0.07 (class imbalance without 2.5D noise crutch); background→glioma FP rate -0.09. Early stop at epoch 55.
 - **Run 5 (`yolo11s_04_05_1246`):** mAP@0.50=0.9337, mAP@0.5:0.95=0.5549, P=0.9250, R=0.9054. 2D puro + oversampling (meningioma 552→1087, pituitary 767→1087). Highest Recall of all runs. Pituitary best ever (0.93); glioma recovered (+0.10 vs Run 4); meningioma lost Run 4 gain — exact duplicate oversampling caused memorization, raising background→glioma FP rate to 0.87.
 - **Run 6 (`yolo11s_11_05_1536`):** mAP@0.50=0.8469, mAP@0.5:0.95=0.4796, P=0.7844, R=0.8461. First BRISC 2025 run (4802 train, 967 healthy negatives, 3 planes). Meningioma 0.94 — best single-class result across all runs; background→glioma FP rate dropped from 0.87 to 0.47. Early stop at epoch 30 (patience=15 too aggressive for new dataset; val-train divergence 0.024, no overfitting).
+- **Run 7 (`yolo11s_11_05_1621`):** mAP@0.50=0.9195, mAP@0.5:0.95=0.5907, P=0.9178, R=0.8840. Best model of the project. BRISC 2025 + patience=30, full 100 epochs, best epoch 62. Pituitary 0.96 — best single-class result ever; meningioma 0.94 maintained; glioma 0.85 (+0.09 vs Run 6); background→glioma FP 0.50 (vs 0.87 in Run 5 Figshare).
 
 ## NEXT STEPS
-1. Run 7: `python src/pipeline.py --dataset brisc --epochs 100` — same BRISC config, patience=30 allows full convergence past epoch 30 plateau.
-2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
+1. Implement FPR metric on healthy images in `src/evaluate.py`: count detections on no_tumor test images (ground truth = 0 boxes) to directly measure background suppression from BRISC negative samples.
+2. Export to TensorRT: `yolo export model=runs/brain_tumor/yolo11s_11_05_1621/weights/best.pt format=engine half=True imgsz=640 workspace=4`

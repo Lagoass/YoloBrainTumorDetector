@@ -39,7 +39,7 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 | 4 | yolo11s_03_05_2240 | 0.9236 | 0.5659 | 0.8763 | 0.8723 | 2D puro (sem 2.5D) + cos_lr=True + patience=15 + sem oversample |
 | 5 | yolo11s_04_05_1246 | 0.9337 | 0.5549 | 0.9250 | 0.9054 | 2D puro + oversampling (meningioma 552→1087, pituitary 767→1087) |
 | 6 | yolo11s_11_05_1536 | 0.8469 | 0.4796 | 0.7844 | 0.8461 | BRISC 2025 — balanced classes + 967 healthy negatives + 3 planes |
-| 7 | yolo11s_pending | — | — | — | — | BRISC 2025 + patience=30 (fix premature convergence at epoch 30) |
+| 7 | yolo11s_11_05_1621 | 0.9195 | 0.5907 | 0.9178 | 0.8840 | BRISC 2025 + patience=30 — full 100 epochs, best epoch 62 |
 
 ---
 
@@ -216,3 +216,32 @@ Early stop at epoch 30 — patience=15 too aggressive for a new dataset. cls_los
 
 ### Conclusion & Next Run Plan
 BRISC confirmed as the correct direction — meningioma generalization bottleneck and background→glioma FP rate both resolved in a single dataset switch. Global metrics are lower than Run 5 only because the model needed more epochs. Run 7: identical config with patience=30 to allow longer exploration past transient plateaus.
+
+---
+
+## Run 7 — yolo11s_11_05_1621
+
+### Metrics (test split)
+| Metric | Value |
+|---|---|
+| mAP@0.50 | 0.9195 |
+| mAP@0.5:0.95 | 0.5907 |
+| Precision | 0.9178 |
+| Recall | 0.8840 |
+
+### Run-specific Changes
+patience increased 15→30. Full 100 epochs, no early stop. Best epoch: 62/100. BRISC 2025 dataset.
+
+### Confusion Matrix Findings
+| Class | True Positive Rate | Notes |
+|---|---|---|
+| Meningioma | 0.94 | Maintained Run 6 best-ever result |
+| Glioma | 0.85 | +0.09 vs Run 6 — 70 extra epochs enabled better learning of the hardest class |
+| Pituitary | 0.96 | Best absolute result of any class across all runs in the project |
+| Background → Glioma | 0.50 FP rate | Slight regression vs Run 6 (0.47) — acceptable given glioma gain |
+
+### Root Cause
+cls_val spiked at epochs 2–3 (values 10–12) — characteristic of BRISC multi-plane multi-protocol variance. Model stabilized at epoch 4. cos_lr produced exemplary terminal convergence: std 0.0027 over last 20 epochs. Val-train divergence 0.184 — healthy generalization. patience=30 was the correct fix for Run 6's premature stop.
+
+### Conclusion & Next Run Plan
+Run 7 is the best model of the project. Meningioma, glioma, and pituitary all improved vs the Figshare baseline. Background→Glioma FP rate reduced from 0.87 (Run 5 Figshare) to 0.50. Next: implement False Positive Rate metric on healthy images in `evaluate.py` to properly quantify background suppression from BRISC negative samples.
