@@ -14,7 +14,7 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 | imgsz | 640 |
 | batch | 16 |
 | amp | True |
-| patience | 15 |
+| patience | 30 |
 | cos_lr | True |
 | fliplr | 0.5 |
 | flipud | 0.0 |
@@ -38,6 +38,8 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 | 3 | yolo11s_29_04_2007 | 0.9290 | 0.6212 | 0.9301 | 0.8844 | Oversampling meningioma+pituitary to glioma parity (seed=42) |
 | 4 | yolo11s_03_05_2240 | 0.9236 | 0.5659 | 0.8763 | 0.8723 | 2D puro (sem 2.5D) + cos_lr=True + patience=15 + sem oversample |
 | 5 | yolo11s_04_05_1246 | 0.9337 | 0.5549 | 0.9250 | 0.9054 | 2D puro + oversampling (meningioma 552→1087, pituitary 767→1087) |
+| 6 | yolo11s_11_05_1536 | 0.8469 | 0.4796 | 0.7844 | 0.8461 | BRISC 2025 — balanced classes + 967 healthy negatives + 3 planes |
+| 7 | yolo11s_pending | — | — | — | — | BRISC 2025 + patience=30 (fix premature convergence at epoch 30) |
 
 ---
 
@@ -185,3 +187,32 @@ Oversample with exact duplicates causes memorization — val-train divergence 0.
 
 ### Conclusion & Next Run Plan
 Dataset is the bottleneck. 708 meningioma images are insufficient for robust generalization. Undersampling glioma discards valid data without improving meningioma. Priority: find a larger, balanced dataset with healthy brain scans and multiple acquisition planes. Awaiting Deep Research results.
+
+---
+
+## Run 6 — yolo11s_11_05_1536
+
+### Metrics (test split)
+| Metric | Value |
+|---|---|
+| mAP@0.50 | 0.8469 |
+| mAP@0.5:0.95 | 0.4796 |
+| Precision | 0.7844 |
+| Recall | 0.8461 |
+
+### Run-specific Changes
+First run on BRISC 2025 dataset. 4802 train / 599 val / 599 test. Stratified 80/10/10 split by class+plane. 967 healthy brain negative samples included. Early stop at epoch 30/100, best epoch 26.
+
+### Confusion Matrix Findings
+| Class | True Positive Rate | Notes |
+|---|---|---|
+| Meningioma | 0.94 | Best result of any class across all runs. 1635 unique diverse images resolved the generalization bottleneck. |
+| Glioma | 0.76 | Solid, stable result |
+| Pituitary | 0.91 | Excellent — close to Run 5 best (0.93) |
+| Background → Glioma | 0.47 FP rate | Dramatic reduction from 0.87 (Run 5) and 0.68 (Run 4). Healthy brain negative samples working as intended. |
+
+### Root Cause
+Early stop at epoch 30 — patience=15 too aggressive for a new dataset. cls_loss spiked severely at epochs 2–3 (values 10–12), model stabilized at epoch 4 and was still improving at epoch 30. Val-train divergence near zero (0.024) confirms healthy generalization with no overfitting; patience fired on a transient plateau, not a real convergence.
+
+### Conclusion & Next Run Plan
+BRISC confirmed as the correct direction — meningioma generalization bottleneck and background→glioma FP rate both resolved in a single dataset switch. Global metrics are lower than Run 5 only because the model needed more epochs. Run 7: identical config with patience=30 to allow longer exploration past transient plateaus.

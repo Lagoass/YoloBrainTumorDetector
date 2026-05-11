@@ -119,7 +119,7 @@ BrainTumorYolo/
 - [X] Train/Val/Test split by PID (seed=42, 80/10/10). `src/split_dataset.py`.
 - [X] `data/dataset/dataset.yaml` generated (absolute path, nc=3).
 - [X] Local GPU Setup (Miniconda, Python 3.12, CUDA 12.1). Cheatsheet in `run.md`.
-- [X] `src/train.py`: constants `DATA_YAML`, `OVERSAMPLE_YAML`, `BRISC_YAML` defined at module level. Accepts `data_yaml` parameter (defaults to `OVERSAMPLE_YAML`). Runs on RTX 5060 (imgsz=640, batch=16, amp=True). Run name auto-generated as `yolo11s_DD_MM_HHMM`.
+- [X] `src/train.py`: constants `DATA_YAML`, `OVERSAMPLE_YAML`, `BRISC_YAML` defined at module level. Accepts `data_yaml` parameter (defaults to `OVERSAMPLE_YAML`). Runs on RTX 5060 (imgsz=640, batch=16, amp=True). `patience=30` (raised from 15 after Run 6 early-stop diagnosis). Run name auto-generated as `yolo11s_DD_MM_HHMM`.
 - [X] `src/evaluate.py`: runs `model.val(split="test")`, accepts `data_yaml` parameter (defaults to `DATA_YAML`). Auto-detects latest best.pt. Saves to `<run_dir>/eval_test`.
 - [X] `src/predict.py`: samples 10 random test images, runs `model.predict(conf=0.25)`. Accepts `test_images_dir` parameter (defaults to figshare test dir). Saves annotated JPGs to `<run_dir>/predict`.
 - [X] `src/pipeline.py`: `--dataset {figshare,figshare_oversample,brisc}` flag (default: `figshare`) selects yaml and test dir for all three pipeline stages. Replaces the old `--no-oversample` flag.
@@ -133,8 +133,8 @@ BrainTumorYolo/
 - **Run 3 (`yolo11s_29_04_2007`):** mAP@0.50=0.9290, mAP@0.5:0.95=0.6212, P=0.9301, R=0.8844. Oversampling confirmed effective.
 - **Run 4 (`yolo11s_03_05_2240`):** mAP@0.50=0.9236, mAP@0.5:0.95=0.5659, P=0.8763, R=0.8723. First run on corrected pure 2D data. Meningioma +0.06 (best gain across all runs); glioma -0.07 (class imbalance without 2.5D noise crutch); background→glioma FP rate -0.09. Early stop at epoch 55.
 - **Run 5 (`yolo11s_04_05_1246`):** mAP@0.50=0.9337, mAP@0.5:0.95=0.5549, P=0.9250, R=0.9054. 2D puro + oversampling (meningioma 552→1087, pituitary 767→1087). Highest Recall of all runs. Pituitary best ever (0.93); glioma recovered (+0.10 vs Run 4); meningioma lost Run 4 gain — exact duplicate oversampling caused memorization, raising background→glioma FP rate to 0.87.
+- **Run 6 (`yolo11s_11_05_1536`):** mAP@0.50=0.8469, mAP@0.5:0.95=0.4796, P=0.7844, R=0.8461. First BRISC 2025 run (4802 train, 967 healthy negatives, 3 planes). Meningioma 0.94 — best single-class result across all runs; background→glioma FP rate dropped from 0.87 to 0.47. Early stop at epoch 30 (patience=15 too aggressive for new dataset; val-train divergence 0.024, no overfitting).
 
 ## NEXT STEPS
-1. Run `python src/data_utils/prepare_dataset_brisc.py` to generate `data/brisc_dataset/` (6000 images, 80/10/10 split).
-2. Train on BRISC: `python src/pipeline.py --dataset brisc --epochs 100`
-3. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
+1. Run 7: `python src/pipeline.py --dataset brisc --epochs 100` — same BRISC config, patience=30 allows full convergence past epoch 30 plateau.
+2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`
