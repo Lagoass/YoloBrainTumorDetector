@@ -21,16 +21,16 @@ def find_weights(path: Path) -> Path:
     return path
 
 
-def predict(weights_path: Path, n: int = 10, conf: float = 0.25):
+def predict(weights_path: Path, n: int = 10, conf: float = 0.25, test_images_dir: Path = TEST_IMAGES_DIR):
     weights_path = find_weights(weights_path)
     if not weights_path.exists():
         print(f"Error: weights not found at {weights_path}")
         print("Train the model first: python src/train.py")
         sys.exit(1)
 
-    images = glob(str(TEST_IMAGES_DIR / "*.jpg"))
+    images = glob(str(test_images_dir / "*.jpg"))
     if not images:
-        print(f"Error: no test images found in {TEST_IMAGES_DIR}")
+        print(f"Error: no test images found in {test_images_dir}")
         sys.exit(1)
 
     sample = random.sample(images, min(n, len(images)))

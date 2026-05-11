@@ -16,11 +16,23 @@ def find_latest_weights() -> Path | None:
     return None
 
 
+DATASET_LABELS = {
+    "figshare": "figshare (base)",
+    "figshare_oversample": "figshare (oversampled)",
+    "brisc": "BRISC 2025",
+}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Brain Tumor YOLO full pipeline")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--skip-train", action="store_true", help="Skip training, use latest best.pt")
-    parser.add_argument("--no-oversample", action="store_true", help="Use base dataset instead of oversampled")
+    parser.add_argument(
+        "--dataset",
+        choices=["figshare", "figshare_oversample", "brisc"],
+        default="figshare",
+        help="Dataset to train and evaluate on (default: figshare)",
+    )
     args = parser.parse_args()
 
     weights_path: Path | None = None
@@ -35,8 +47,13 @@ def main():
             sys.exit(1)
         print(f"Skipping training. Using weights: {weights_path}")
     else:
-        from train import train, DATA_YAML, OVERSAMPLE_YAML
-        data_yaml_used = DATA_YAML if args.no_oversample else OVERSAMPLE_YAML
+        from train import train, DATA_YAML, OVERSAMPLE_YAML, BRISC_YAML
+        if args.dataset == "figshare":
+            data_yaml_used = DATA_YAML
+        elif args.dataset == "figshare_oversample":
+            data_yaml_used = OVERSAMPLE_YAML
+        else:
+            data_yaml_used = BRISC_YAML
         save_dir, trained_model = train(epochs=args.epochs, data_yaml=data_yaml_used)
         trainer = trained_model.trainer
         weights_path = Path(save_dir) / "weights" / "best.pt"
@@ -44,11 +61,21 @@ def main():
 
     # --- Evaluate ---
     from evaluate import evaluate
-    metrics, eval_save_dir = evaluate(weights_path)
+    if args.dataset == "figshare":
+        from train import DATA_YAML as _data_yaml
+    elif args.dataset == "figshare_oversample":
+        from train import OVERSAMPLE_YAML as _data_yaml
+    else:
+        from train import BRISC_YAML as _data_yaml
+    metrics, eval_save_dir = evaluate(weights_path, data_yaml=_data_yaml)
 
     # --- Predict ---
     from predict import predict
-    results = predict(weights_path)
+    if args.dataset == "brisc":
+        test_images_dir = ROOT / "data" / "brisc_dataset" / "images" / "test"
+    else:
+        test_images_dir = ROOT / "data" / "dataset" / "images" / "test"
+    results = predict(weights_path, test_images_dir=test_images_dir)
     predict_save_dir = Path(results[0].save_dir) if results else ROOT / "runs" / "brain_tumor" / "predict"
 
     # --- Summary ---
@@ -61,8 +88,8 @@ def main():
     best_epoch = total_time = early_stopped = None
     if trainer is not None:
         best_epoch = getattr(trainer, "best_epoch", None)
-        total_time = getattr(trainer, "t", None)  # seconds elapsed
-        epochs_run = getattr(trainer, "epoch", None)  # last epoch index (0-based)
+        total_time = getattr(trainer, "t", None)
+        epochs_run = getattr(trainer, "epoch", None)
         max_epochs = getattr(trainer, "epochs", args.epochs)
         if epochs_run is not None:
             early_stopped = (epochs_run + 1) < max_epochs
@@ -74,9 +101,7 @@ def main():
     print(f"  Eval dir    : {eval_save_dir}")
     print(f"  Predictions : {predict_save_dir}")
     print()
-    if data_yaml_used is not None:
-        label = "oversample" if "oversample" in data_yaml_used else "base"
-        print(f"  Dataset     : {label} ({Path(data_yaml_used).name})")
+    print(f"  Dataset     : {DATASET_LABELS[args.dataset]}")
     if best_epoch is not None:
         print(f"  Best epoch  : {best_epoch + 1}")
     if total_time is not None:

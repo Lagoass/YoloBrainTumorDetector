@@ -20,7 +20,7 @@ def find_weights(path: Path) -> Path:
     return path
 
 
-def evaluate(weights_path: Path):
+def evaluate(weights_path: Path, data_yaml: str = DATA_YAML):
     weights_path = find_weights(weights_path)
     if not weights_path.exists():
         print(f"Error: weights not found at {weights_path}")
@@ -30,7 +30,7 @@ def evaluate(weights_path: Path):
     print(f"Evaluating model: {weights_path}")
     model = YOLO(str(weights_path))
     metrics = model.val(
-        data=DATA_YAML,
+        data=data_yaml,
         split="test",
         imgsz=640,
         batch=16,

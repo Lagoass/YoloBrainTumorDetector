@@ -7,6 +7,7 @@ from ultralytics import YOLO
 ROOT = Path(__file__).resolve().parent.parent
 DATA_YAML = str(ROOT / "data" / "dataset" / "dataset.yaml")
 OVERSAMPLE_YAML = str(ROOT / "data" / "oversample_dataset" / "dataset.yaml")
+BRISC_YAML = str(ROOT / "data" / "brisc_dataset" / "dataset.yaml")
 
 
 def train(epochs=100, batch=16, data_yaml=OVERSAMPLE_YAML):
