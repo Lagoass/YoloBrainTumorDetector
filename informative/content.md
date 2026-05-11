@@ -26,11 +26,36 @@
 ```text
 BrainTumorYolo/
 ├── data/
-│   ├── raw/                 # 3064 .mat + cvind.mat
+│   ├── raw_figshare/        # 3070 files: 3064 .mat slices + cvind.mat + extras
+│   ├── raw_brisc/
+│   │   └── brisc2025/       # BRISC 2025 dataset (Fateh et al., arXiv:2506.14318)
+│   │       ├── classification_task/
+│   │       │   ├── train/
+│   │       │   │   ├── glioma/      # 1147 .jpg
+│   │       │   │   ├── meningioma/  # 1329 .jpg
+│   │       │   │   ├── no_tumor/    # 1067 .jpg
+│   │       │   │   └── pituitary/   # 1457 .jpg  (total: 5000)
+│   │       │   └── test/
+│   │       │       ├── glioma/      #  254 .jpg
+│   │       │       ├── meningioma/  #  306 .jpg
+│   │       │       ├── no_tumor/    #  140 .jpg
+│   │       │       └── pituitary/   #  300 .jpg  (total: 1000)
+│   │       ├── segmentation_task/
+│   │       │   ├── train/
+│   │       │   │   ├── images/      # 3933 .jpg  (tumor classes only — no_tumor excluded)
+│   │       │   │   └── masks/       # 3933 .png  (binary pixel-wise masks)
+│   │       │   └── test/
+│   │       │       ├── images/      #  860 .jpg
+│   │       │       └── masks/       #  860 .png
+│   │       ├── manifest.csv         # file index with metadata
+│   │       ├── manifest.csv.sha256
+│   │       ├── manifest.json
+│   │       ├── manifest.json.sha256
+│   │       └── README.md
 │   ├── dataset/
 │   │   ├── dataset.yaml     # YOLO dataset config (absolute path, nc=3)
 │   │   ├── images/
-│   │   │   ├── all/         # 3064 2.5D .jpg (source, kept intact)
+│   │   │   ├── all/         # 3064 2D .jpg (source, kept intact)
 │   │   │   ├── train/       # 2406 slices (186 PIDs)
 │   │   │   ├── val/         #  373 slices ( 23 PIDs)
 │   │   │   └── test/        #  285 slices ( 24 PIDs)
@@ -75,7 +100,8 @@ BrainTumorYolo/
 ```
 
 ## CURRENT STATUS
-- [X] Download & extraction complete.
+- [X] BRISC 2025 dataset added (`data/raw_brisc/brisc2025/`): 6000 T1-weighted MRI slices across 4 classes (glioma, meningioma, pituitary, no_tumor), three anatomical planes (axial, coronal, sagittal), with pixel-wise segmentation masks for all tumor classes. Intended as supplementary data to address Figshare's size and imbalance limitations.
+- [X] Download & extraction complete (Figshare: raw_figshare/, BRISC: raw_brisc/).
 - [X] Data parsed and formatted. All 3064 files in `data/dataset/*/all`.
 - [X] Train/Val/Test split by PID (seed=42, 80/10/10). `src/split_dataset.py`.
 - [X] `data/dataset/dataset.yaml` generated (absolute path, nc=3).
@@ -91,7 +117,8 @@ BrainTumorYolo/
 - **Run 2 (`yolo11s_29_04_1759`):** mAP@0.50=0.9217, mAP@0.5:0.95=0.5468, P=0.9244, R=0.8453. `label_smoothing=0.1` tested — had no effect (symmetric operation, insensitive to class distribution). Identical trajectory to Run 1.
 - **Run 3 (`yolo11s_29_04_2007`):** mAP@0.50=0.9290, mAP@0.5:0.95=0.6212, P=0.9301, R=0.8844. Oversampling confirmed effective.
 - **Run 4 (`yolo11s_03_05_2240`):** mAP@0.50=0.9236, mAP@0.5:0.95=0.5659, P=0.8763, R=0.8723. First run on corrected pure 2D data. Meningioma +0.06 (best gain across all runs); glioma -0.07 (class imbalance without 2.5D noise crutch); background→glioma FP rate -0.09. Early stop at epoch 55.
+- **Run 5 (`yolo11s_04_05_1246`):** mAP@0.50=0.9337, mAP@0.5:0.95=0.5549, P=0.9250, R=0.9054. 2D puro + oversampling (meningioma 552→1087, pituitary 767→1087). Highest Recall of all runs. Pituitary best ever (0.93); glioma recovered (+0.10 vs Run 4); meningioma lost Run 4 gain — exact duplicate oversampling caused memorization, raising background→glioma FP rate to 0.87.
 
 ## NEXT STEPS
-1. Run 5: `python src/data_utils/oversample.py` then `python src/pipeline.py` — 2D puro + oversampling. Expected to combine meningioma gains from clean data with glioma recovery from balanced classes.
+1. Find a larger, balanced dataset with healthy brain scans and multiple acquisition planes. Dataset is the confirmed bottleneck — 708 meningioma images are insufficient for robust generalization. Awaiting Deep Research results.
 2. Export to TensorRT: `yolo export model=runs/brain_tumor/<run_name>/weights/best.pt format=engine half=True imgsz=640 workspace=4`

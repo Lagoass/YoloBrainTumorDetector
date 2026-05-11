@@ -31,17 +31,17 @@ Each section title matches the run folder name under `runs/brain_tumor/`.
 
 ## Run Comparison Table
 
-| Run | mAP@0.50 | mAP@0.5:0.95 | Precision | Recall | Key Change |
-|---|---|---|---|---|---|
-| yolo11s_29_04_1620 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | Baseline — no class weights |
-| yolo11s_29_04_1759 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | label_smoothing=0.1 — no effect |
-| yolo11s_29_04_2007 | 0.9290 | 0.6212 | 0.9301 | 0.8844 | Oversampling meningioma+pituitary to glioma parity (seed=42) |
-| yolo11s_03_05_2240 | 0.9236 | 0.5659 | 0.8763 | 0.8723 | 2D puro (sem 2.5D) + cos_lr=True + patience=15 + sem oversample |
-| yolo11s_pending | — | — | — | — | 2D puro + oversampling (Run 3 strategy on clean data) |
+| Run | Folder | mAP@0.50 | mAP@0.5:0.95 | Precision | Recall | Key Change |
+|---|---|---|---|---|---|---|
+| 1 | yolo11s_29_04_1620 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | Baseline — no class weights |
+| 2 | yolo11s_29_04_1759 | 0.9217 | 0.5468 | 0.9244 | 0.8453 | label_smoothing=0.1 — no effect |
+| 3 | yolo11s_29_04_2007 | 0.9290 | 0.6212 | 0.9301 | 0.8844 | Oversampling meningioma+pituitary to glioma parity (seed=42) |
+| 4 | yolo11s_03_05_2240 | 0.9236 | 0.5659 | 0.8763 | 0.8723 | 2D puro (sem 2.5D) + cos_lr=True + patience=15 + sem oversample |
+| 5 | yolo11s_04_05_1246 | 0.9337 | 0.5549 | 0.9250 | 0.9054 | 2D puro + oversampling (meningioma 552→1087, pituitary 767→1087) |
 
 ---
 
-## yolo11s_29_04_1620
+## Run 1 — yolo11s_29_04_1620
 
 ### Metrics (test split)
 | Metric | Value |
@@ -70,7 +70,7 @@ Class imbalance: glioma is the most represented class in the dataset. The model 
 
 ---
 
-## yolo11s_29_04_1759
+## Run 2 — yolo11s_29_04_1759
 
 ### Metrics (test split)
 | Metric | Value |
@@ -99,7 +99,7 @@ Oversample meningioma before training to balance class distribution at the data 
 
 ---
 
-## yolo11s_29_04_2007
+## Run 3 — yolo11s_29_04_2007
 
 ### Metrics (test split)
 | Metric | Value |
@@ -130,7 +130,7 @@ Post-run analysis: `best.pt` was saved at epoch 36, with severe oscillation for 
 
 ---
 
-## yolo11s_03_05_2240
+## Run 4 — yolo11s_03_05_2240
 
 ### Metrics (test split)
 | Metric | Value |
@@ -156,3 +156,32 @@ Pure 2D inputs improved data quality and reduced background bias. However, class
 
 ### Conclusion & Next Run Plan
 Run 5 = 2D puro + oversampling. Expected to combine meningioma gains from clean data with glioma recovery from balanced classes.
+
+---
+
+## Run 5 — yolo11s_04_05_1246
+
+### Metrics (test split)
+| Metric | Value |
+|---|---|
+| mAP@0.50 | 0.9337 |
+| mAP@0.5:0.95 | 0.5549 |
+| Precision | 0.9250 |
+| Recall | 0.9054 |
+
+### Run-specific Changes
+2D puro + oversampling (meningioma 552→1087, pituitary 767→1087). Best epoch: 86/100. Full 100 epochs, no early stop. Highest Recall of all runs.
+
+### Confusion Matrix Findings
+| Class | True Positive Rate | Notes |
+|---|---|---|
+| Meningioma | 0.74 | Lost Run 4 gain; oversample duplicates reduced effective diversity |
+| Glioma | 0.81 | +0.10 vs Run 4 — recovered strongly; oversampling compensated class imbalance |
+| Pituitary | 0.93 | Best result of any class across all runs |
+| Background → Glioma | 0.87 FP rate | Regression vs Run 4 (0.68); overconfidence from memorized duplicates |
+
+### Root Cause
+Oversample with exact duplicates causes memorization — val-train divergence 0.784 vs 0.497 in Run 4. Model associates uncertainty with glioma since it is the only class with fully unique, diverse images. Meningioma and pituitary oversamples are repeated patterns; glioma is not.
+
+### Conclusion & Next Run Plan
+Dataset is the bottleneck. 708 meningioma images are insufficient for robust generalization. Undersampling glioma discards valid data without improving meningioma. Priority: find a larger, balanced dataset with healthy brain scans and multiple acquisition planes. Awaiting Deep Research results.
