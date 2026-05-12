@@ -24,6 +24,22 @@ Three independent YOLOv11s detectors, one per tumor class: **glioma vs. no_tumor
 
 ---
 
+## Negative Sample Methodology
+
+How no_tumor images are annotated during training is not a minor implementation detail — it determines whether the detection head's regression branch is touched at all, and directly controls FPR on healthy images.
+
+| Method | TAL / DFL behavior | FPR | Verdict |
+|---|---|---|---|
+| **Empty Annotations** | TAL bypasses regression entirely (`n_max_boxes==0`); DFL integrity preserved; BCE suppresses classification logits only | <5% | **Correct — native YOLO design intent** |
+| **Full-Image Bounding Box** | TAL collapses anchor assignment to the image boundary; DFL destroyed by the boundary void; regression corrupted across all anchors | >40% | Architecturally invalid |
+| **Anatomical Brain Contour** | Semantic-spatial paradox: a tumor exists *inside* the labeled "no_tumor" object, confusing the spatial prior; degrades recall for small tumors | 10–15% | Semantically inconsistent |
+
+- **Empty Annotations is the definitive standard.** When a label file is empty, YOLO's Task-Aligned Learning loop detects zero ground-truth boxes and skips the IoU-regression and DFL loss computation entirely. Only the classification BCE fires, pushing all anchor logits toward background. This is the only method that is both architecturally valid and semantically correct.
+- **Our Run 7 result confirms it works at scale.** FPR = 0.0% on 120 healthy test images using Empty Annotations. mAP@0.50 range expected with this approach in literature: 0.950–0.985 on balanced datasets.
+- **Negative sample ratio warrants tuning.** Run 7 used a 20.1% negative sample ratio (967 no_tumor out of 4802 train images). The literature recommends 1–10% for detection tasks; exceeding this can over-penalize classification logits across all anchors, potentially contributing to the residual background→glioma FP rate of 0.50 observed on tumor test images. A ratio closer to 10% is the next variable to isolate.
+
+---
+
 ## Cross-Approach Inference
 
 Running both approaches on the same BRISC test split and comparing their outputs reveals information neither approach exposes alone.
