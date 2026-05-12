@@ -8,6 +8,9 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_YAML = str(ROOT / "data" / "dataset" / "dataset.yaml")
 OVERSAMPLE_YAML = str(ROOT / "data" / "oversample_dataset" / "dataset.yaml")
 BRISC_YAML = str(ROOT / "data" / "brisc_dataset" / "dataset.yaml")
+BRISC_GLIOMA_YAML = str(ROOT / "data" / "dissected_brisc" / "glioma" / "dataset.yaml")
+BRISC_MENINGIOMA_YAML = str(ROOT / "data" / "dissected_brisc" / "meningioma" / "dataset.yaml")
+BRISC_PITUITARY_YAML = str(ROOT / "data" / "dissected_brisc" / "pituitary" / "dataset.yaml")
 
 
 def train(epochs=100, batch=16, data_yaml=OVERSAMPLE_YAML):
