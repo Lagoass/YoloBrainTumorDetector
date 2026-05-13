@@ -1,11 +1,15 @@
 """Binary pipeline: train → evaluate → healthy_fpr → predict for each tumor type.
 
 Assumes data/dissected_brisc/ already exists (run prepare_dataset_binary.py first).
+With --balanced, uses data/dissected_brisc_balanced/ and saves to
+runs/binary_brain_tumor_balanced/.
 
 Usage:
-  python src/pipeline_binary.py                  # all 3 tumors, 100 epochs
-  python src/pipeline_binary.py --tumor glioma   # single tumor
-  python src/pipeline_binary.py --epochs 1       # quick smoke-test
+  python src/pipeline_binary.py                           # all 3 tumors, 100 epochs
+  python src/pipeline_binary.py --tumor glioma            # single tumor
+  python src/pipeline_binary.py --epochs 1                # quick smoke-test
+  python src/pipeline_binary.py --balanced                # balanced negatives (10%)
+  python src/pipeline_binary.py --balanced --tumor glioma # balanced, single tumor
 """
 import argparse
 import sys
@@ -19,6 +23,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 TUMORS = ["glioma", "meningioma", "pituitary"]
 DISSECTED_ROOT = ROOT / "data" / "dissected_brisc"
+DISSECTED_ROOT_BALANCED = ROOT / "data" / "dissected_brisc_balanced"
 
 
 def yaml_for(tumor: str) -> str:
@@ -47,12 +52,15 @@ TRAIN_KWARGS = dict(
 )
 
 
-def train_binary(tumor: str, epochs: int) -> tuple[Path, object]:
+def train_binary(tumor: str, epochs: int, balanced: bool = False) -> tuple[Path, object]:
     run_name = f"yolo11s_{tumor}_{time.strftime('%d_%m_%H%M')}"
-    project = str(ROOT / "runs" / "binary_brain_tumor" / tumor)
-    data_yaml = yaml_for(tumor)
+    dissected_root = DISSECTED_ROOT_BALANCED if balanced else DISSECTED_ROOT
+    run_dir = "binary_brain_tumor_balanced" if balanced else "binary_brain_tumor"
+    project = str(ROOT / "runs" / run_dir / tumor)
+    data_yaml = str(dissected_root / tumor / "dataset.yaml")
     print(f"\n{'='*60}")
     print(f"Training binary model: {tumor} | epochs={epochs} | name={run_name}")
+    print(f"Data root: {dissected_root}")
     print(f"{'='*60}")
     model = YOLO("yolo11s.pt")
     try:
@@ -68,17 +76,20 @@ def train_binary(tumor: str, epochs: int) -> tuple[Path, object]:
     return weights, model.trainer
 
 
-def evaluate_binary(weights: Path, tumor: str):
+def evaluate_binary(weights: Path, tumor: str, balanced: bool = False):
     from evaluate import evaluate
-    metrics, save_dir = evaluate(weights, data_yaml=yaml_for(tumor))
+    dissected_root = DISSECTED_ROOT_BALANCED if balanced else DISSECTED_ROOT
+    data_yaml = str(dissected_root / tumor / "dataset.yaml")
+    metrics, save_dir = evaluate(weights, data_yaml=data_yaml)
     return metrics, save_dir
 
 
-def healthy_fpr_binary(weights: Path, tumor: str):
+def healthy_fpr_binary(weights: Path, tumor: str, balanced: bool = False):
     from evaluate import healthy_fpr
-    test_images_dir = DISSECTED_ROOT / tumor / "images" / "test"
+    dissected_root = DISSECTED_ROOT_BALANCED if balanced else DISSECTED_ROOT
+    test_images_dir = dissected_root / tumor / "images" / "test"
     # Identify no_tumor images from dissected labels
-    labels_test = DISSECTED_ROOT / tumor / "labels" / "test"
+    labels_test = dissected_root / tumor / "labels" / "test"
     healthy_images = []
     for lbl in sorted(labels_test.glob("*.txt")):
         if lbl.stat().st_size == 0:
@@ -102,17 +113,18 @@ def healthy_fpr_binary(weights: Path, tumor: str):
     return total, fp_count, fp_rate
 
 
-def predict_binary(weights: Path, tumor: str):
+def predict_binary(weights: Path, tumor: str, balanced: bool = False):
     from predict import predict
-    test_images_dir = DISSECTED_ROOT / tumor / "images" / "test"
+    dissected_root = DISSECTED_ROOT_BALANCED if balanced else DISSECTED_ROOT
+    test_images_dir = dissected_root / tumor / "images" / "test"
     return predict(weights, test_images_dir=test_images_dir)
 
 
-def run_tumor(tumor: str, epochs: int) -> dict:
-    weights, trainer = train_binary(tumor, epochs)
-    metrics, eval_dir = evaluate_binary(weights, tumor)
-    total_healthy, fp_count, fp_rate = healthy_fpr_binary(weights, tumor)
-    predict_binary(weights, tumor)
+def run_tumor(tumor: str, epochs: int, balanced: bool = False) -> dict:
+    weights, trainer = train_binary(tumor, epochs, balanced=balanced)
+    metrics, eval_dir = evaluate_binary(weights, tumor, balanced=balanced)
+    total_healthy, fp_count, fp_rate = healthy_fpr_binary(weights, tumor, balanced=balanced)
+    predict_binary(weights, tumor, balanced=balanced)
 
     best_epoch = getattr(trainer, "best_epoch", None)
     epochs_run = getattr(trainer, "epoch", None)
@@ -162,12 +174,14 @@ def main():
     parser = argparse.ArgumentParser(description="Binary brain tumor YOLO pipeline")
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--tumor", choices=TUMORS, default=None, help="Run only one tumor model")
+    parser.add_argument("--balanced", action="store_true", default=False,
+                        help="Use dissected_brisc_balanced/ (10%% negatives) and save to runs/binary_brain_tumor_balanced/")
     args = parser.parse_args()
 
     targets = [args.tumor] if args.tumor else TUMORS
     results = []
     for tumor in targets:
-        r = run_tumor(tumor, args.epochs)
+        r = run_tumor(tumor, args.epochs, balanced=args.balanced)
         results.append(r)
 
     print_summary(results)

@@ -147,7 +147,7 @@ BrainTumorYolo/
 │   ├── evaluate.py   # model.val() on test split; accepts data_yaml parameter
 │   ├── predict.py    # 10 random test images inference; accepts test_images_dir parameter
 │   ├── pipeline.py   # Orchestrator: train → evaluate → predict; --dataset flag
-│   ├── pipeline_binary.py  # Binary models pipeline; --tumor and --epochs flags
+│   ├── pipeline_binary.py  # Binary models pipeline; --tumor and --epochs flags; --balanced reads from dissected_brisc_balanced/ and saves to runs/binary_brain_tumor_balanced/
 │   └── pipeline_triagem.py # Triage pipeline (tumor/no_tumor nc=1); --epochs flag; runs to runs/triagem/
 ├── run.md                   # Cheatsheet: Conda GPU setup and execution commands
 └── CLAUDE.md                # Claude Code context
@@ -189,5 +189,5 @@ BrainTumorYolo/
 5. [X] Train triage model: `python src/pipeline_triagem.py`
 6. [ ] Implementar pipeline em cascata: triagem → classificador (Run 7 multiclasse ou especialistas binários)
 7. [ ] TensorRT export dos modelos finais
-8. [ ] Generate balanced binary datasets: `python src/data_utils/prepare_dataset_binary_balanced.py`
-9. [ ] Train balanced binary models: `python src/pipeline_binary.py` (apontando para `dissected_brisc_balanced`)
+8. [X] Generate balanced binary datasets: `python src/data_utils/prepare_dataset_binary_balanced.py`
+9. [ ] Train balanced binary models: `python src/pipeline_binary.py --balanced`
