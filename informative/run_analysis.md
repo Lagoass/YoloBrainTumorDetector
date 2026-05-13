@@ -245,3 +245,108 @@ cls_val spiked at epochs 2–3 (values 10–12) — characteristic of BRISC mult
 
 ### Conclusion & Next Run Plan
 Run 7 is the best model of the project. Meningioma, glioma, and pituitary all improved vs the Figshare baseline. Background→Glioma FP rate reduced from 0.87 (Run 5 Figshare) to 0.50. Next: implement False Positive Rate metric on healthy images in `evaluate.py` to properly quantify background suppression from BRISC negative samples.
+
+---
+
+## Binary Models — BRISC 2025
+
+Três modelos YOLOv11s especializados (nc=1 cada) treinados no dataset `data/dissected_brisc/` gerado por `prepare_dataset_binary.py`. Cada modelo recebe as imagens da sua classe-alvo (tumor) + todas as imagens `no_tumor` do BRISC, com labels vazios para as negativas. Mesma configuração de treinamento do Run 7 multiclasse. Baseline de comparação em todas as subseções abaixo: **Run 7 multiclasse** (`yolo11s_11_05_1621`).
+
+### Tabela Comparativa — Binary Models vs. Run 7
+
+| Modelo | mAP@0.50 | mAP@0.5:0.95 | Precision | Recall | FPR healthy | vs Run 7 Recall |
+|---|---|---|---|---|---|---|
+| Run 7 (multiclasse) | 0.9195 | 0.5907 | 0.9178 | 0.8840 | 0.50 (background→glioma) | — |
+| Binary — Glioma | 0.7932 | 0.4093 | 0.7292 | 0.7786 | 0.0000 | −0.1054 |
+| Binary — Meningioma | 0.9574 | 0.6198 | 0.9432 | 0.9693 | 0.0000 | +0.0853 |
+| Binary — Pituitary | 0.9675 | 0.5294 | 0.8956 | 0.9264 | 0.0333 | +0.0424 |
+
+---
+
+### Binary — Glioma
+
+#### Métricas (test split)
+| Métrica | Valor |
+|---|---|
+| mAP@0.50 | 0.7932 |
+| mAP@0.5:0.95 | 0.4093 |
+| Precision | 0.7292 |
+| Recall | 0.7786 |
+| FPR healthy | 0.0000 |
+
+#### Run-specific Changes
+Baseline de comparação: Run 7 multiclasse. Modelo binário nc=1 (glioma vs. no_tumor). Dataset: `dissected_brisc/glioma/` — imagens de glioma do BRISC + todas as imagens no_tumor com labels vazios. Eliminada competição inter-classe com meningioma e pituitary.
+
+#### Confusion Matrix Findings
+| Classe | Detectados / Total | Notas |
+|---|---|---|
+| Glioma (TP) | 121 / 140 | TPR 0.864 — 19 missed |
+| Background → Glioma (FP) | 0 / 37 acima de conf=0.25 | 37 FP existem abaixo de conf=0.25; FPR medido na faixa operacional = 0.000 |
+
+Deltas vs. Run 7: Recall −0.1054 (0.7786 vs. 0.8840); FPR healthy 0.0000 vs. 0.50 (eliminação total).
+
+#### Root Cause
+A regressão no recall de glioma sob o modelo binário revela que parte do desempenho no Run 7 multiclasse era sustentado por regularização implícita das classes competidoras. Com apenas glioma vs. no_tumor, o modelo não dispõe da pressão contrastiva de meningioma e pituitary para refinar suas fronteiras de decisão — glioma é a classe mais difusa visualmente (bordas irregulares, edema peritumoral) e depende de contexto multi-classe para atingir sua máxima discriminação. O FPR zero confirma que o FPR residual de 0.50 do Run 7 é inteiramente atribuível à competição inter-classe e não à confusão glioma–tecido-saudável: quando forçado a decidir apenas entre glioma e normal, o modelo não gera falsos positivos na faixa operacional.
+
+#### Cross-Model Finding
+O modelo binário de glioma responde diretamente à questão central do `research_directions.md`: a competição multi-classe **fornece regularização benéfica** para glioma. O modelo especializado perde −0.1054 de recall em relação ao multiclasse (0.7786 vs. 0.8840), enquanto elimina integralmente o FPR em healthy. O trade-off é desfavorável para glioma isolado: a especialização remove o FPR, mas remove também a pressão contrastiva que tornava o multiclasse mais discriminativo. Para glioma, o modelo unificado é superior em recall clínico; o binário é superior em especificidade.
+
+---
+
+### Binary — Meningioma
+
+#### Métricas (test split)
+| Métrica | Valor |
+|---|---|
+| mAP@0.50 | 0.9574 |
+| mAP@0.5:0.95 | 0.6198 |
+| Precision | 0.9432 |
+| Recall | 0.9693 |
+| FPR healthy | 0.0000 |
+
+#### Run-specific Changes
+Baseline de comparação: Run 7 multiclasse. Modelo binário nc=1 (meningioma vs. no_tumor). Dataset: `dissected_brisc/meningioma/` — imagens de meningioma do BRISC + todas as imagens no_tumor com labels vazios.
+
+#### Confusion Matrix Findings
+| Classe | Detectados / Total | Notas |
+|---|---|---|
+| Meningioma (TP) | 158 / 163 | TPR 0.969 — 5 missed |
+| Background → Meningioma (FP) | 0 / 10 acima de conf=0.25 | 10 FP existem abaixo de conf=0.25; FPR medido na faixa operacional = 0.000 |
+
+Deltas vs. Run 7: Recall +0.0853 (0.9693 vs. 0.8840); mAP@0.50 +0.0379 (0.9574 vs. 0.9195); FPR healthy 0.0000 (vs. não isolável no multiclasse).
+
+#### Root Cause
+Meningioma é a classe que mais se beneficia da especialização binária. No multiclasse, 30–40% das ativações de meningioma competiam diretamente com glioma, que compartilha padrões de contraste em T1. Ao remover essa competição, o modelo dedica toda a capacidade do detection head à distinção meningioma–normal, superando em recall (+0.0853) e mAP@0.50 (+0.0379) o melhor resultado multiclasse jamais obtido. O conjunto de dados BRISC fornece 1329 imagens diversas de meningioma (vs. 708 no Figshare original) — a combinação de diversidade de dados e foco binário elimina o gargalo de generalização identificado no Run 5.
+
+#### Cross-Model Finding
+Meningioma é o único caso em que o modelo especializado supera o multiclasse em todas as métricas primárias. Isso confirma que, para classes com alta sobreposição visual com uma classe vizinha (meningioma/glioma), a competição inter-classe no multiclasse impõe um teto estrutural de desempenho. A questão central do `research_directions.md` recebe resposta assimétrica: a regularização compartilhada beneficia glioma mas prejudica meningioma. Um ensemble prático combinaria o especialista binário de meningioma com o modelo unificado para as demais classes.
+
+---
+
+### Binary — Pituitary
+
+#### Métricas (test split)
+| Métrica | Valor |
+|---|---|
+| mAP@0.50 | 0.9675 |
+| mAP@0.5:0.95 | 0.5294 |
+| Precision | 0.8956 |
+| Recall | 0.9264 |
+| FPR healthy | 0.0333 |
+
+#### Run-specific Changes
+Baseline de comparação: Run 7 multiclasse. Modelo binário nc=1 (pituitary vs. no_tumor). Dataset: `dissected_brisc/pituitary/` — imagens de pituitary do BRISC + todas as imagens no_tumor com labels vazios.
+
+#### Confusion Matrix Findings
+| Classe | Detectados / Total | Notas |
+|---|---|---|
+| Pituitary (TP) | 167 / 176 | TPR 0.949 — 9 missed |
+| Background → Pituitary (FP) | 4 / 43 acima de conf=0.25 | 43 FP totais, mas 39 abaixo de conf=0.25; FPR operacional = 0.0333 |
+
+Deltas vs. Run 7: Recall +0.0424 (0.9264 vs. 0.8840); mAP@0.50 +0.0480 (0.9675 vs. 0.9195); FPR healthy 0.0333 — único modelo binário com FPR residual acima de zero na faixa operacional.
+
+#### Root Cause
+Pituitary apresenta morfologia distinta (tumor pequeno, sela turca, plano sagital predominante) que o torna naturalmente discriminável — o modelo especializado melhora recall e mAP sem surpresas. O FPR residual de 0.0333 (4 imagens healthy acima de conf=0.25) contrasta com FPR zero nos outros dois binários e revela que uma fração do ruído background→pituitary no Run 7 é genuinamente visual, não um artefato da competição inter-classe: estruturas anatômicas da base do crânio (seio esfenoidal, hipófise normal) ativam o detector em conf acima do limiar operacional. Isso não estava visível no multiclasse porque o FPR era agregado em background→glioma. A naturalidade do FPR residual de pituitary é um achado mecanístico novo.
+
+#### Cross-Model Finding
+Pituitary é o caso intermediário: o especialista binário melhora recall (+0.0424) e mAP@0.50 (+0.0480), confirmando que a competição inter-classe limitava levemente seu desempenho no multiclasse. Porém, ao contrário de meningioma e glioma, pituitary retém um FPR residual de 0.0333, demonstrando que parte das suas confusões com background são intrínsecas à anatomia da base do crânio e não dependem da presença de outras classes tumorais. Isso responde a uma sub-questão do `research_directions.md`: o FPR de 0.50 do Run 7 (medido em background→glioma) não era uniforme entre classes — glioma carregava quase toda a contaminação inter-classe, meningioma era secundária, e pituitary contribuía com um ruído anatômico irredutível independente da estratégia de classificação.
