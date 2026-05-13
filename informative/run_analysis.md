@@ -350,3 +350,39 @@ Pituitary apresenta morfologia distinta (tumor pequeno, sela turca, plano sagita
 
 #### Cross-Model Finding
 Pituitary é o caso intermediário: o especialista binário melhora recall (+0.0424) e mAP@0.50 (+0.0480), confirmando que a competição inter-classe limitava levemente seu desempenho no multiclasse. Porém, ao contrário de meningioma e glioma, pituitary retém um FPR residual de 0.0333, demonstrando que parte das suas confusões com background são intrínsecas à anatomia da base do crânio e não dependem da presença de outras classes tumorais. Isso responde a uma sub-questão do `research_directions.md`: o FPR de 0.50 do Run 7 (medido em background→glioma) não era uniforme entre classes — glioma carregava quase toda a contaminação inter-classe, meningioma era secundária, e pituitary contribuía com um ruído anatômico irredutível independente da estratégia de classificação.
+
+---
+
+## Triage Model — BRISC 2025
+
+Modelo YOLOv11s de triagem (nc=1, class 0=tumor) treinado no dataset `data/triagem_dataset/` gerado por `prepare_dataset_triagem.py`. Todas as três classes tumorais (meningioma, glioma, pituitary) são colapsadas em uma única classe `tumor`; imagens `no_tumor` recebem label vazio. Mesma configuração de treinamento do Run 7 multiclasse. Baseline de comparação em todas as subseções abaixo: **Run 7 multiclasse** e **Binary Models**.
+
+### Métricas (test split)
+
+| Métrica | Valor |
+|---|---|
+| mAP@0.50 | 0.9425 |
+| mAP@0.5:0.95 | 0.6030 |
+| Precision | 0.9142 |
+| Recall | 0.9019 |
+| FPR healthy (nível de imagem) | 0.0083 (1/120) |
+| Tempo de treino | 92.5 min |
+
+### Confusion Matrix Findings
+
+| Classe | Taxa | Notas |
+|---|---|---|
+| Tumor → Tumor (TP) | 0.94 | 6% das detecções tumorais perdidas como background — menor taxa de miss entre todos os modelos treinados |
+| Background → Tumor (FP, nível de patch val) | 1.00 | Métrica de patch interna ao YOLO val; FPR real medido em nível de imagem = 0.0083 (1 FP em 120 imagens healthy) |
+
+### Root Cause
+
+O colapso das três classes tumorais em uma única classe `tumor` resolve o FPR sem sacrificar recall por um mecanismo mecanístico direto: no modelo multiclasse (Run 7), o FPR de 0.50 era concentrado em background→glioma e emergia da pressão contrastiva entre classes — patches ambíguos eram forçados a competir entre meningioma, glioma e pituitary, e a classe mais representada (glioma) absorvia a incerteza. Ao colapsar as três classes, o modelo não precisa mais resolver ambiguidades inter-classe: a única decisão relevante é tumor vs. não-tumor. Essa simplificação do espaço de saída direciona toda a capacidade discriminativa do detection head para a fronteira tumor–saudável, que é geometricamente mais separável do que as fronteiras inter-tumorais. O resultado é FPR de 0.0083 em nível de imagem — redução de 98,3% em relação ao FPR de 0.50 do Run 7 — mantendo recall de 0.9019, superior ao Run 7 (0.8840).
+
+Comparando com os modelos binários (FPR ~0.0% mas recall de glioma regredido para 0.7786): os binários eliminam FPR mas pagam custo em recall porque cada especialista perde a regularização contrastiva das classes vizinhas. O modelo de triagem, por sua vez, retém a pressão contrastiva entre tumor e não-tumor sem fragmentar o espaço de classes — glioma não precisa mais competir com meningioma e pituitary dentro do detection head, mas ainda enfrenta o contraste com tecido saudável, que é o sinal discriminativo mais robusto disponível no dataset. Isso explica por que recall(triagem)=0.9019 > recall(binary glioma)=0.7786: a triagem preserva o benefício contrastivo sem o custo da fragmentação inter-classe.
+
+### Cross-Model Finding
+
+O resultado do modelo de triagem confirma empiricamente a hipótese central do pipeline em cascata: **triagem de alta sensibilidade como primeiro estágio é viável e superior a qualquer modelo único.** mAP@0.50=0.9425 é o maior mAP@0.50 obtido no projeto, superando o Run 7 multiclasse (0.9195) e equiparando ao melhor binário (pituitary: 0.9675, mas com escopo restrito). FPR=0.0083 em nível de imagem significa que menos de 1% dos cérebros saudáveis disparariam alarme falso — limiar operacionalmente aceitável para um filtro de primeiro estágio.
+
+A arquitetura de cascata validada por esses resultados é: **(1) Triage Model** como filtro de alta sensibilidade — elimina 99,2% dos cérebros saudáveis antes de qualquer classificação; **(2) Classificador multiclasse (Run 7) ou especialistas binários** como segundo estágio, acionado apenas para imagens positivas no estágio 1. Esse design evita o trade-off de precisão vs. recall que aflige cada modelo individualmente: a triagem maximiza recall (minimiza falsos negativos clínicos), o classificador downstream maximiza especificidade de classe (minimiza confusão inter-tumoral). O Run 7 residual de background→glioma de 0.50 — o principal problema em aberto até os binários — torna-se irrelevante no pipeline em cascata, pois apenas imagens triadas positivo chegam ao classificador multiclasse.

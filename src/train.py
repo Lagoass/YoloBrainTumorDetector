@@ -11,6 +11,7 @@ BRISC_YAML = str(ROOT / "data" / "brisc_dataset" / "dataset.yaml")
 BRISC_GLIOMA_YAML = str(ROOT / "data" / "dissected_brisc" / "glioma" / "dataset.yaml")
 BRISC_MENINGIOMA_YAML = str(ROOT / "data" / "dissected_brisc" / "meningioma" / "dataset.yaml")
 BRISC_PITUITARY_YAML = str(ROOT / "data" / "dissected_brisc" / "pituitary" / "dataset.yaml")
+TRIAGEM_YAML = str(ROOT / "data" / "triagem_dataset" / "dataset.yaml")
 
 
 def train(epochs=100, batch=16, data_yaml=OVERSAMPLE_YAML):
