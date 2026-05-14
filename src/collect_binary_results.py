@@ -31,31 +31,23 @@ for ratio in RATIOS:
         latest = max(run_dirs, key=lambda d: d.stat().st_mtime)
 
         results_src = latest / "results.csv"
-        cm_norm_src = latest / "eval_test" / "confusion_matrix_normalized.png"
+        cm_src = latest / "eval_test" / "confusion_matrix.png"
 
         missing = []
         if not results_src.exists():
             missing.append("results.csv")
-        if not cm_norm_src.exists():
-            missing.append("eval_test/confusion_matrix_normalized.png")
+        if not cm_src.exists():
+            missing.append("eval_test/confusion_matrix.png")
 
         if missing:
             skipped.append(f"{ratio}pct/{tumor} ({latest.name}): missing {', '.join(missing)}")
             continue
 
         tumor_dir = OUTPUT_DIR / tumor
-        cm_raw_dir = tumor_dir / "confusion_matrix_raw"
         tumor_dir.mkdir(parents=True, exist_ok=True)
-        cm_raw_dir.mkdir(parents=True, exist_ok=True)
 
         shutil.copy2(results_src, tumor_dir / f"results_{ratio}pct_{tumor}.csv")
-        shutil.copy2(cm_norm_src, tumor_dir / f"confusion_matrix_normalized_{ratio}pct_{tumor}.png")
-
-        cm_raw_src = latest / "eval_test" / "confusion_matrix.png"
-        if cm_raw_src.exists():
-            shutil.copy2(cm_raw_src, cm_raw_dir / f"confusion_matrix_{ratio}pct_{tumor}.png")
-        else:
-            skipped.append(f"{ratio}pct/{tumor} ({latest.name}): missing eval_test/confusion_matrix.png (other files copied)")
+        shutil.copy2(cm_src, tumor_dir / f"confusion_matrix_{ratio}pct_{tumor}.png")
 
         collected[tumor].append(f"{ratio}pct")
 
