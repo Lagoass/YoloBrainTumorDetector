@@ -183,9 +183,9 @@ BrainTumorYolo/
 - **Run 5 (`yolo11s_04_05_1246`):** mAP@0.50=0.9337, mAP@0.5:0.95=0.5549, P=0.9250, R=0.9054. 2D puro + oversampling (meningioma 552→1087, pituitary 767→1087). Highest Recall of all runs. Pituitary best ever (0.93); glioma recovered (+0.10 vs Run 4); meningioma lost Run 4 gain — exact duplicate oversampling caused memorization, raising background→glioma FP rate to 0.87.
 - **Run 6 (`yolo11s_11_05_1536`):** mAP@0.50=0.8469, mAP@0.5:0.95=0.4796, P=0.7844, R=0.8461. First BRISC 2025 run (4802 train, 967 healthy negatives, 3 planes). Meningioma 0.94 — best single-class result across all runs; background→glioma FP rate dropped from 0.87 to 0.47. Early stop at epoch 30 (patience=15 too aggressive for new dataset; val-train divergence 0.024, no overfitting).
 - **Run 7 (`yolo11s_11_05_1621`):** mAP@0.50=0.9195, mAP@0.5:0.95=0.5907, P=0.9178, R=0.8840. Best model of the project. BRISC 2025 + patience=30, full 100 epochs, best epoch 62. Pituitary 0.96 — best single-class result ever; meningioma 0.94 maintained; glioma 0.85 (+0.09 vs Run 6); background→glioma FP 0.50 (vs 0.87 in Run 5 Figshare).
-- **Binary — Glioma:** mAP@0.50=0.7932, P=0.7292, R=0.7786, FPR healthy=0.0000. Recall regressed −0.1054 vs Run 7 multiclasse — glioma depends on inter-class contrastive regularization from competing classes to reach peak discrimination; specialized model eliminates FPR entirely but loses that structural advantage.
-- **Binary — Meningioma:** mAP@0.50=0.9574, P=0.9432, R=0.9693, FPR healthy=0.0000. Best meningioma result of the project (+0.0853 recall vs Run 7). Removing glioma competition freed full model capacity for the meningioma–normal boundary; 1329 diverse BRISC images eliminated the generalization bottleneck identified in Run 5.
-- **Binary — Pituitary:** mAP@0.50=0.9675, P=0.8956, R=0.9264, FPR healthy=0.0333. Recall +0.0424 vs Run 7. Unique among the three: retains a residual FPR of 0.0333 (4 images above conf=0.25) — skull-base anatomy (sphenoid sinus, normal pituitary fossa) activates the detector independently of inter-class competition. FPR near-zero across all three binary models confirms that Run 7's residual background→glioma FPR of 0.50 was an artifact of classification competition, not intrinsic glioma–tissue visual confusion.
+- **Binary Glioma (best ratio: 20%):** mAP@0.50=0.8497, P=0.7935, R=0.8509, FPR=0.0%. Ratio 20% domina — melhor mAP e recall, convergência até epoch 99. Glioma depende de regularização contrastiva inter-classe; binário ainda abaixo do Run 7 multiclasse em recall.
+- **Binary Meningioma (best ratio: 20%):** mAP@0.50=0.9727, P=0.9734, R=0.9632, FPR=0.0%. Melhor resultado de meningioma do projeto. Ratio 20% com menor FP anchor absoluto e mAP superior a qualquer outra configuração.
+- **Binary Pituitary (best ratio: 30% equilíbrio / 20% recall):** mAP@0.50=0.9671, P=0.9399, R=0.9489, FPR=2.7%. Única classe sem ratio dominante claro. 30% oferece melhor equilíbrio; 20% tem recall superior (173/176) mas foi cortado prematuramente (best epoch = último epoch) — rerun pendente com patience=50.
 - **Triage Model — BRISC 2025:** mAP@0.50=0.9425, mAP@0.5:0.95=0.6030, P=0.9142, R=0.9019, FPR healthy=0.0083 (1/120 — melhor FPR do projeto). nc=1 (tumor/no_tumor); colapsar 3 classes em uma única classe `tumor` elimina a competição inter-classe e reduz FPR de 0.50 (Run 7) para 0.8% em nível de imagem, mantendo recall superior ao Run 7 (0.9019 vs. 0.8840). Confirma viabilidade do pipeline em cascata: triagem como filtro de alta sensibilidade antes do classificador multiclasse ou especialistas binários.
 
 ## NEXT STEPS
@@ -198,7 +198,9 @@ BrainTumorYolo/
 7. [ ] TensorRT export dos modelos finais
 8. [X] Generate balanced binary datasets: `python src/data_utils/prepare_dataset_binary_balanced.py`
 9. [ ] Train balanced binary models: `python src/pipeline_binary.py --balanced`
-10. [ ] Generate ratio datasets: `python src/data_utils/prepare_dataset_binary_ratios.py`
-11. [ ] Run ratio ablation: `python src/pipeline_binary.py --ratio all`
+10. [X] Generate ratio datasets: `python src/data_utils/prepare_dataset_binary_ratios.py`
+11. [X] Run ratio ablation: `python src/pipeline_binary.py --ratio all`
+12. [ ] Rerun binary pituitary 20% com patience=50 (best epoch = último epoch na run atual — modelo cortado prematuramente)
+13. [ ] Implementar pipeline em cascata: triagem → multiclasse (glioma) + especialistas binários (meningioma 20%, pituitary 30%)
 
 > **NOTE:** `runs/binary_brain_tumor/` currently uses structure `{ratio}pct/{tumor}/{run_name}/`. Ideal future structure is a single timestamped folder at the top level containing ratio and tumor subfolders directly: `binary_brain_tumor/yolo11s_DD_MM_HHMM/{ratio}pct/{tumor}/`. Manual reorganization pending.
