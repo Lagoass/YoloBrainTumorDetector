@@ -154,7 +154,8 @@ BrainTumorYolo/
 │   ├── predict.py    # 10 random test images inference; accepts test_images_dir parameter
 │   ├── pipeline.py   # Orchestrator: train → evaluate → predict; --dataset flag
 │   ├── pipeline_binary.py  # Binary models pipeline; --tumor and --epochs flags; --ratio 10/20/30/40 reads from dissected_brisc_ratios/{ratio}pct/ → runs/binary_brain_tumor/{ratio}pct/; --ratio all runs ablation across all 4 ratios with consolidated summary
-│   └── pipeline_triagem.py # Triage pipeline (tumor/no_tumor nc=1); --epochs flag; runs to runs/triagem/
+│   ├── pipeline_triagem.py # Triage pipeline (tumor/no_tumor nc=1); --epochs flag; runs to runs/triagem/
+   └── collect_binary_results.py  # One-shot utility: collects ratio ablation results into runs/analize_models/binary_ratio_comparison/run_all/
 ├── run.md                   # Cheatsheet: Conda GPU setup and execution commands
 └── CLAUDE.md                # Claude Code context
 ```
@@ -199,3 +200,5 @@ BrainTumorYolo/
 9. [ ] Train balanced binary models: `python src/pipeline_binary.py --balanced`
 10. [ ] Generate ratio datasets: `python src/data_utils/prepare_dataset_binary_ratios.py`
 11. [ ] Run ratio ablation: `python src/pipeline_binary.py --ratio all`
+
+> **NOTE:** `runs/binary_brain_tumor/` currently uses structure `{ratio}pct/{tumor}/{run_name}/`. Ideal future structure is a single timestamped folder at the top level containing ratio and tumor subfolders directly: `binary_brain_tumor/yolo11s_DD_MM_HHMM/{ratio}pct/{tumor}/`. Manual reorganization pending.
