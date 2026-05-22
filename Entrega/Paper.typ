@@ -15,9 +15,9 @@
 // ── Title ────────────────────────────────────────────────────────────────────
 #align(center)[
   #text(14pt, weight: "bold")[
-    Detecção de Tumores Cerebrais em MRI T1CE com YOLOv11s: \
-    Ablation do Ratio de Amostras Negativas e Comparação entre \
-    Modelo Multiclasse e Especialistas Binários
+    Otimização por Classe em Detecção de Tumor Cerebral \
+    com YOLO: Ratio de Negativos e Arquitetura \
+    Multiclasse vs. Binária
   ]
 ]
 
