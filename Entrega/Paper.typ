@@ -21,6 +21,17 @@
   ]
 ]
 
+#v(0.8em)
+#align(center)[
+  #text(12pt)[Gustavo Doniani Lagôa Gomes]
+]
+#align(center)[
+  #text(11pt)[Insper]
+]
+#align(center)[
+  #text(11pt)[22 de maio de 2026]
+]
+
 #v(1.5em)
 
 // ── 1. Resumo ────────────────────────────────────────────────────────────────
@@ -164,7 +175,7 @@ não foi realizada. Este trabalho preenche esse gap, revelando que o efeito é a
 todas as classes se beneficiam da especialização binária da mesma forma.
 
 // ── 4. Dataset ───────────────────────────────────────────────────────────────
-= Dataset
+= Metodologia
 
 == BRISC 2025
 
@@ -255,7 +266,7 @@ val e teste.
 )
 
 // ── 5. Setup Experimental ────────────────────────────────────────────────────
-= Setup Experimental
+== Setup Experimental
 
 == Arquitetura
 
@@ -301,7 +312,11 @@ literatura para comparação.
 *mAP\@0.5:0.95:* mAP médio sobre thresholds de IoU de 0.50 a 0.95 em passos de 0.05.
 Indica qualidade de localização além da classificação.
 
-*Precision e Recall:* calculados sobre o test split.
+*Precision e Recall:* calculados sobre o test split via
+curva PR ao threshold ótimo reportado pelo YOLO, exceto
+para os recalls por classe do Run 7 na Tabela 4, que
+foram extraídos por contagem direta da matriz de confusão
+da Figura 5 com conf=0.25.
 
 *FPR em imagens saudáveis:* métrica clínica primária deste trabalho. Implementada via
 healthy_fpr(): inferência com conf=0.25 sobre todas as imagens com label vazio no test
@@ -333,7 +348,7 @@ best epoch, early stops e padrões de instabilidade. Essa análise de convergên
 integrante dos resultados, não apenas metadado de treinamento.
 
 // ── 6. Experimento 1 — Ablation do Ratio de Amostras Negativas ───────────────
-= Experimento 1 — Ablation do Ratio de Amostras Negativas
+= Resultados e Discussão
 
 == Setup
 
@@ -439,7 +454,7 @@ competição inter-classe. A variação inter-classe do ratio ótimo não havia 
 anteriormente na literatura de detecção de tumor cerebral com YOLO.
 
 // ── 7. Experimento 2 — Multiclasse vs. Especialistas Binários ────────────────
-= Experimento 2 — Multiclasse vs. Especialistas Binários
+== Experimento 2 — Multiclasse vs. Especialistas Binários
 
 == Setup
 
@@ -497,7 +512,9 @@ espaço Softmax, não de glioma sendo confundido com tecido saudável. O binári
 FPR ao custo de perda significativa de recall.
 
 *Meningioma.* O especialista binário é superior em mAP, FPR e apresenta ganho modesto
-em recall. mAP\@0.50=0.9727 contra 0.9195 global do Run 7;
+em recall. mAP\@0.50=0.9727 contra 0.9195 global do Run 7
+(nota: mAP do especialista binário é por classe; mAP do
+Run 7 é global — a comparação é indicativa, não simétrica);
 // CORREÇÃO 4 — parágrafo meningioma: recalls corrigidos e contagem de TPs corrigida
 recall=0.9693 contra 0.9571 de meningioma no multiclasse;
 FPR=0.0% contra 0.50. A matriz confirma 158/163 meningiomas detectados no test split
@@ -537,7 +554,7 @@ que nenhuma arquitetura resolve sem volume adequado de negativos.
 O FPR próximo de zero nos binários de glioma e meningioma, contrastado com o FPR de
 0.50 no multiclasse, permite uma atribuição causal direta: o FPR residual do Run 7 não é
 confusão entre tumor e tecido saudável — é artefato da competição entre classes no espaço
-Softmax, onde logits de classes tumorais com alta confiança encroach sobre o espaço de
+Softmax, onde logits de classes tumorais com alta confiança invadem o espaço de
 decisão do background.
 
 == Finding Central
@@ -548,9 +565,12 @@ de performance para classes com morfologia distinta (meningioma). Este é o prim
 resultado empírico desse tipo com arquitetura YOLO aplicada a detecção de tumor cerebral,
 e sugere que a escolha entre multiclasse e especialistas binários deve ser feita por classe,
 com base nas propriedades morfológicas de cada tipo tumoral.
+Para pituitary, a especialização binária produz ganho
+em FPR (0.50 → 2.7%) com leve regressão em recall,
+configurando um resultado distinto dos outros dois casos.
 
 // ── 8. Discussão ─────────────────────────────────────────────────────────────
-= Discussão
+== Discussão Geral
 
 == Integração dos Dois Findings
 
@@ -625,7 +645,8 @@ produzem realce em T1CE — metástases, abscessos cerebrais, linfoma primário 
 incorretamente como um dos três tumores primários. O abscesso cerebral é o caso de maior
 risco clínico: sua aparência em anel de realce é visualmente idêntica ao glioblastoma no
 T1CE, e o tratamento incorreto com corticosteroide é catastrófico em presença de infecção
-ativa.
+ativa — cenário externo ao escopo deste trabalho mas relevante
+para extensões clínicas futuras do pipeline.
 
 *Classe no_tumor híbrida.* As imagens no_tumor do BRISC incluem lesões benignas
 não-neoplásicas além de cérebros saudáveis. O FPR medido neste trabalho reflete a taxa
@@ -644,7 +665,7 @@ Validação em dados de outras instituições, com diferentes protocolos de aqui
 realizada. A generalização dos findings não pode ser assumida sem experimentos adicionais.
 
 // ── 9. Conclusão e Trabalho Futuro ───────────────────────────────────────────
-= Conclusão e Trabalho Futuro
+== Conclusão e Trabalho Futuro
 
 Este trabalho demonstrou empiricamente que duas variáveis metodológicas negligenciadas
 na literatura — o ratio de amostras negativas e a escolha arquitetural entre modelo
